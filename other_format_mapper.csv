@@ -1,2 +1,4 @@
 format,map_list
 .pdf,.pdf
+.txt,.txt
+.doc,".doc, .docx"
