@@ -67,10 +67,7 @@ python3 folder_summary.py -i "/home/user/directory1"
     
 #### Summary
     
-The purpose of this script is to extract the technical metadata of selected file format/formats of interest within a given directory and storing the metadata details for each file in a csv file and a txt file (for image formats) or a xml file (for av formats). The individual csv files are merged together to form a master csv file containing the metadata of all the files for each format of interest.
-Exiftool is used to extract metadata for image formats and Mediainfo is used to extract technical metadata for av formats.
-The list of image or av formats supported by the script can be viewed in the "format" column of av_format_mapper.csv and image_format_mapper.csv files. To support additional formats please update these format-mapper csv files.
-Aditionally, jhove and brunnhilde utilities are optionally available for use within this script.
+The purpose of this script is to extract the technical metadata of selected file format/formats of interest within a given directory and storing the metadata details for each file in a csv file and a txt file (for image formats) or a xml file (for av formats). The individual csv files are merged together to form a master csv file containing the metadata of all the files for each format of interest.  Exiftool is used to extract metadata for image formats and Mediainfo is used to extract technical metadata for av formats. The list of image or av formats supported by the script can be viewed in the "format" column of av_format_mapper.csv and image_format_mapper.csv files. To support additional formats please update these format-mapper csv files. Aditionally, jhove and brunnhilde utilities are optionally available for use within this script. The final files are placed in a new folder beside the input_folder (sidecar) by default but can be modified to store it in a specific destination by providing the output directory argument. Finally, an optional "other supplements" argument is also provided to copy a file or directory from a different source onto the destination.
 
 #### Output
     
@@ -86,10 +83,10 @@ Two subdirectories are created inside the output folder named exiftool_csv and e
 #### Arguments accepted by this script
     
 1) -i : Input (Absolute) path of the directory to inspect. 
-                    (Required Parameter)
-2) -img :  Enter the image format/formats to inspect.
-3) -o : Enter the output directory to place all the required processing outputs. If no value is entered all output files/folders are placed as a sidecar to the input directory.
-                (Optional parameter)
+        (Required Parameter)
+2) -o : Enter the output directory to place all the required processing outputs. If no value is entered all output files/folders are placed as a sidecar to the input directory.
+        (Optional parameter)
+3) -img :  Enter the image format/formats to inspect.
 4) -av : Enter the av format/formats to inspect.
 5) -text : Enter the "other" format/formats to inspect.
 6) -jhove : Enter y/n to enable the jhove audit utility to validate and summarize the formats present in the source folder.
@@ -97,24 +94,25 @@ Two subdirectories are created inside the output folder named exiftool_csv and e
 7) -brunnhilde : Enter y/n to enable the brunnhilde/Clam-AV utility to perform and report file format identification along with virus-checking.
             (Optional in command line argument, mandatory user input during execution)
 8) -other_sup : Enter any other folder/file from a different source to be copied into the destination.
+            (Optional parameter)
     
-Either one of -img, -av and -text has to be entered for the script execute. All three or any two of them could be used together as well. 
+Either one of -img, -av and -text is mandatory for the script to execute. All three or any two of them could be used together as well. 
 
 #### Example commands to execute the script in the command window :
 
 ```bash
-python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpg"
+python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpeg"
 python3 metadata_extractor.py -i "/home/user/directory1" -av ".mp3" -jhove y -brunnhilde y
-python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpg .png" -jhove y
+python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpeg .png" -jhove y
 python3 metadata_extractor.py -i "/home/user/directory1" -av ".mp3 .mp4" -brunnhilde y
-python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpg .png" -text ".pdf" -jhove y -brunnhilde n
+python3 metadata_extractor.py -i "/home/user/directory1" -img ".jpeg .tiff .png" -text ".pdf" -jhove y -brunnhilde y
 ```
 
 ### 3) ip_creator.py -
     
 #### Summary 
     
-The purpose of this script is to create a package wherein a specific format of interest (av/image) is copied and stored inside the "objects" folder created inside the output directory - "<destination_directory>/<uid>". An optional argument is used to decide on perform a simple copy of the file or copy the file along with preserving it's original directory structure from the source to the destination. Metadata extraction is done with the help of metadata_extractor.py and stored in the "metadata" folder created in the destination directory. Optionally, supplementary files could be stored in the "supplement" folder. Aditionally, jhove and brunnhilde utilities are optionally available for use within this script.
+The purpose of this script is to create a package wherein a specific format of interest (av/image) is copied and stored inside the "objects" folder created inside the output directory - "<destination_directory>/<uid>". An optional argument is used to decide on performing a simple copy of the file or copy the file along with preserving it's original directory structure from the source to the destination. Metadata extraction is done with the help of metadata_extractor.py and stored in the "metadata" folder created in the destination directory. Optionally, supplementary files could be stored in the "supplement" folder. Additonally, jhove and brunnhilde utilities are optionally available for use within this script. Finally, an optional "other supplements" argument is also provided to copy a file or directory from a different source onto the destination's supplement folder.
         
 #### Output
 1) "output-directory/objects" - Copy of files of a specfic format (av/image) of interest.
@@ -137,23 +135,27 @@ The purpose of this script is to create a package wherein a specific format of i
         (Optional in command line argument, mandatory user input during execution)
 4) -format : The file format of interest to be packaged.
         (Required Parameter) 
-5) -supplement: Specfic supplementary file formats to be stored.
-        (Optional)
+5) -supplement : Specfic supplementary file formats to be stored.
+        (Optional in command line argument, mandatory user input during execution)
 6) -kfs : Preserve the input folder structure when copying files to objects directory. Pass on either 'y' for yes or 'n' for no.
-        (Optional)
+        (Optional Parameter)
 7) -jhove : Enter y/n to enable the jhove audit utility to validate and summarize the formats present in the source folder.
         (Optional in command line argument, mandatory user input during execution)
 8) -brunnhilde : Enter y/n to enable the brunnhilde/Clam-AV utility to perform and report file format identification along with virus-checking.
         (Optional in command line argument, mandatory user input during execution)
 9) -other_sup : Enter any other folder/file from a different source to be copied into the destination.
+        (Optional Parameter)
 
 
 #### Example commands to execute the script in the command window
 
 ```bash
-python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpg" -supplement ".pdf" -kfs y -jhove n -brunnhilde y
-python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".tif" -brunnhilde y -jhove y -supplement .docx
-python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpg" -supplement ".xlsx .pdf"
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpeg" -supplement ".pdf" -kfs y -jhove n -brunnhilde y
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".tiff" -brunnhilde y -jhove y -supplement ".docx"
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpeg" -supplement ".xlsx .pdf"
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpeg" -supplement ".xlsx .pdf" -other_sup "/home/user/directory1/filA.txt"
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpeg"  -other_sup "/home/user/directory9/filA.txt"
+python3 ip_creator.py -i "/home/user/directory1" -o "/home/user/directory4" -uid "dooa1212" -format ".jpeg"  -other_sup "/home/user/directory9/directory2"
 ```
 
 ### 4) search_duplicates.py -
@@ -176,7 +178,7 @@ The purpose of this script is to search and return a list of duplicates across d
 
 ```bash
 python3 search_duplicates.py -i "/home/user/directory1" 
-python3 search_duplicates.py -i "/home/user/directory1 /home/user/directory2 /home/user/directory3"
+python3 search_duplicates.py -i "/home/user/directory1" "/home/user/directory2" "/home/user/directory3"
 ```
 
 ### 5) remove.py -
@@ -232,7 +234,7 @@ python3 pdf2csv.py -i "/home/user/directory1/abc.pdf" -start 12 -end 35 -o "home
 
 ### 7) logger.py -
     
-Summary :
+#### Summary
     
 This script contains functions necessary to log all the above script runs.
 
@@ -300,6 +302,7 @@ be validated using the IFIscripts python script [validate.py](https://github.com
 ## Documented by :
 ```bash
 Abhijeet Rao,
+Digital Archive Intern - Summer 2024,
 M.Sc. Data Science and Analytics,
 UCC 2023-2024
 ```
