@@ -75,7 +75,12 @@ def arg_parse():
     # Set Brunnhilde to run as default explicitly
     parser.set_defaults(brunnhilde=True)
     ''
-    
+    # --noclam flag: disables ClamAV when running Brunnhilde
+    parser.add_argument('--noclam',
+                        action='store_true',
+                        help='Disable ClamAV when running Brunnhilde (enabled by default)')
+    '' 
+
     parser.add_argument('-other_sup',
                         type=str,
                         default='', 
@@ -223,9 +228,19 @@ def brunnhilde_scan(args, log_name_source):
     generate_log(log_name_source, ' - Brunnhilde-ClamAV scan available/enabled - Beginning scanning')
 
     brunnhilde_output_folder = os.path.join(args.metadata_folder, args.uid+"_brunnhilde")
-    command = f"""\
-    brunnhilde.py "{args.objects_folder}" "{brunnhilde_output_folder}"
-    """
+    # Base Brunnhilde command
+    command = [
+        "brunnhilde.py",
+        args.objects_folder,
+        brunnhilde_output_folder,
+    ]
+    # If --noclam was requested, pass it through to Brunnhilde
+    if args.noclam:
+        command.append("--noclam")
+
+    # Execute Brunnhilde
+    subprocess.run(command, text=True
+'' 
     print(command)
     subprocess.run(command, shell=True, text=True)
 
