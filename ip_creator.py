@@ -64,7 +64,7 @@ def arg_parse():
     parser.add_argument('-jhove',
                         choices=['y', 'n'],
                         type=str,
-                        default='', 
+                        default='y', 
                         help="Enter your choice on using 'jhove' utility IF available")
 
     parser.add_argument('--no-brunnhilde',
