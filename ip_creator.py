@@ -67,11 +67,14 @@ def arg_parse():
                         default='', 
                         help="Enter your choice on using 'jhove' utility IF available")
 
-    parser.add_argument('-brunnhilde',
-                        choices=['y', 'n'],
-                        type=str,
-                        default='', 
-                        help="Enter your choice on using 'brunnhilde-ClamAV' utility IF available")
+    parser.add_argument('--no-brunnhilde',
+                        dest='brunnhilde',
+                        action='store_false', 
+                        help='Do not run Brunnhilde (enabled by default)')
+    
+    # Set Brunnhilde to run as default explicitly
+    parser.set_defaults(brunnhilde=True)
+    ''
     
     parser.add_argument('-other_sup',
                         type=str,
@@ -300,16 +303,6 @@ def main():
             args.jhove = 'n'
             generate_log(log_name_source, "Ignoring jhove auditing")
 
-    if args.brunnhilde == "":
-        q = input("Would you like to generate a siegfried-brunnhilde virus report? (Ensure \
-                  brunnhilde/clamAV installed in this system. Recommended OS for using this feature is MacOS.\
-                  Provide y/n as your input) ")
-        if q.lower() == 'y':
-            args.brunnhilde = 'y'
-            generate_log(log_name_source, f"Enabling jhove audit report")
-        else:
-            args.brunnhilde = 'n'
-            generate_log(log_name_source, "Ignoring jhove auditing")
     
 
     args_object = Arguments()
@@ -398,7 +391,7 @@ def main():
     if args.jhove == 'y' and args.format in ['.tiff', '.jpeg', '.jpeg2000', '.pdf']:
         jhove_audit(args, log_name_source)
     
-    if args.brunnhilde == 'y':
+    if args.brunnhilde:
         brunnhilde_scan(args, log_name_source)
     
 
