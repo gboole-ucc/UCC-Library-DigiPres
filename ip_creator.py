@@ -223,26 +223,40 @@ def jhove_audit(args, log_name_source):
 # Below function performs the brunnhilde/ClamAv virus scanning of the "objects" folder
 # content and stores the results in the "metadata" folder.
 def brunnhilde_scan(args, log_name_source):
+          
+    # print status of Brunnhilde's process on terminal
+    if args.noclam:
+        msg = ' - Brunnhilde scan beginning (ClamAV disabled via --noclam)'
+    else:
+        msg = ' - Brunnhilde scan beginning (ClamAV enabled)'
+    print(msg)
+    generate_log(log_name_source, msg)
 
-    print(' - Brunnhilde-ClamAV scan available/enabled - Beginning scanning')
-    generate_log(log_name_source, ' - Brunnhilde-ClamAV scan available/enabled - Beginning scanning')
-
-    brunnhilde_output_folder = os.path.join(args.metadata_folder, args.uid+"_brunnhilde")
+    # Define the Brunnhilde output directory first  
+    brunnhilde_output_folder = os.path.join(
+        args.metadata_folder,
+        args.uid+"_brunnhilde"
+        )
+    
     # Base Brunnhilde command
     command = [
         "brunnhilde.py",
         args.objects_folder,
         brunnhilde_output_folder,
     ]
+
+    # Remove Brunnhilde output directory if it already exists to allow a re-run
+    if os.path.exists(brunnhilde_output_folder):
+        shutil.rmtree(brunnhilde_output_folder)
+
     # If --noclam was requested, pass it through to Brunnhilde
     if args.noclam:
         command.append("--noclam")
 
     # Execute Brunnhilde
-    subprocess.run(command, text=True
-'' 
+ 
     print(command)
-    subprocess.run(command, shell=True, text=True)
+    subprocess.run(command, text=True)
 
 
     os.rename(os.path.join(brunnhilde_output_folder, "report.html"), \
@@ -251,11 +265,29 @@ def brunnhilde_scan(args, log_name_source):
     os.rename(os.path.join(brunnhilde_output_folder, "siegfried.csv"), \
               os.path.join(brunnhilde_output_folder, args.uid+"_siegfried.csv"))
     
-    os.rename(os.path.join(os.path.join(brunnhilde_output_folder, "logs"), "viruscheck-log.txt"), \
-              os.path.join(os.path.join(brunnhilde_output_folder, "logs"), args.uid+"_viruscheck-log.txt"))
+    # Rename ClamAV log only if it exists (i.e. ClamAV was run)
+    virus_log = os.path.join(
+        brunnhilde_output_folder, "logs", "viruscheck-log.txt"
+    )
     
-    print(' - brunnhilde-ClamAV available/enabled - scanning process completed')
-    generate_log(log_name_source, ' - brunnhilde-ClamAV available/enabled - scanning process completed')
+    if os.path.exists(virus_log):
+        os.rename(
+            virus_log, 
+            os.path.join(
+                brunnhilde_output_folder,
+                "logs",
+                args.uid+"_viruscheck-log.txt"
+            )
+        )
+    else:
+        generate_log(
+            log_name_source,
+            "Brunnhilde ran with --noclam option, so no viruscheck log generated"
+            )
+    
+
+
+
 
 # Below function is the main logic to setup all the required folders for 
 # "information package" creation. It also ensures all required arguments
@@ -408,6 +440,25 @@ def main():
     
     if args.brunnhilde:
         brunnhilde_scan(args, log_name_source)
+
+    # final brunnhilde nd clamAV status message
+    if not args.brunnhilde:
+        msg = (
+            "- Process completed. Brunnhilde was disabled. "
+            " ClamAV scan was not performed."
+        )
+    elif args.noclam:
+        msg = (
+            "- Process completed. Brunnhilde was enabled."
+            " ClamAV scan was not performed."
+        )
+    else:
+        msg = (
+            "- Process completed. Brunnhilde was enabled."
+            " ClamAV scan was performed."
+        )
+    print(msg)
+    generate_log(log_name_source, msg)
     
 
     if os.path.exists(supplement_folder):
@@ -419,3 +470,5 @@ def main():
 # Below code marks the start of execution of the program.
 if __name__ == "__main__":
     main()
+
+    
