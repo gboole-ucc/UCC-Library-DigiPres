@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from html import parser
 import os
 import sys
 import argparse
@@ -130,6 +129,10 @@ def objects_and_supplements_ip(args, log_name_source):
     objects_folder = args.objects_folder
     supplement_folder = args.supplement_folder
     manifest = os.path.join(output_path, "objects_manifest.md5")
+
+    # Ensure manifest is fresh on each run (avoid appending stale entries)
+    with open(manifest, 'w', encoding='utf-8') as f:
+        pass
 
     for root, _, files in os.walk(input_path):
         if files == () or files == []:
@@ -373,18 +376,6 @@ def main():
     else:
         supplement = args.supplement
         generate_log(log_name_source, f"Supplementary formats to be preserved - {supplement}")
-
-    if args.jhove == "":
-        q = input("Would you like to generate a jhove audit report? (Ensure jhove installed in this system. \
-                  Provide y/n as your input)")
-        if q.lower() == 'y':
-            args.jhove = 'y'
-            generate_log(log_name_source, f"Enabling jhove audit report")
-        else:
-            args.jhove = 'n'
-            generate_log(log_name_source, "Ignoring jhove auditing")
-
-    
 
     args_object = Arguments()
 
