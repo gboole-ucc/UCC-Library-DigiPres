@@ -54,12 +54,11 @@ def arg_parse():
                         default="", 
                         help="Enter the supplementary formats you would like to preserve")
     
-    parser.add_argument('-kfs',
-                        choices=['y', 'n'],
-                        required=True,
-                        type=str,
-                        default='n', 
-                        help="(KFS - Keep folder structure) : Enter your choice on preserving directory structure for the objects in the destination")
+    parser.add_argument(
+                        '-kfs',
+                        action='store_true', 
+                        help="Keep original folder structure for objects (default is flat files)"
+                        )
     
     parser.add_argument(
                         '--no-jhove',
@@ -150,7 +149,10 @@ def objects_and_supplements_ip(args, log_name_source):
                 hash_source = str(hashlib_md5(file_src))
 
                 
-                if args.kfs == 'n':
+                if not args.kfs:
+                    
+                    # flatten folder structure   
+
                     shutil.copy2(file_src, objects_folder)
 
                     new_file_name = os.path.basename(root) + "_" + file
@@ -331,10 +333,6 @@ def brunnhilde_scan(args, log_name_source):
             "Brunnhilde ran with --noclam option, so no viruscheck log generated"
             )
     
-
-
-
-
 # Below function is the main logic to setup all the required folders for 
 # "information package" creation. It also ensures all required arguments
 # are entered properly by the user.
