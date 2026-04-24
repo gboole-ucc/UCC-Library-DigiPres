@@ -1,4 +1,9 @@
 #!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+
+# This script originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
+# It was written by Kieran O'Leary. It is licensed under the MIT License (https://opensource.org/licenses/MIT)
+# It is used here in UCC-Library-DigiPres repo with acknowledgement and thanks to the original author(s) and IFI.
+
 '''
 Generates sidecar MD5 or SHA512 checksum manifest.
 '''

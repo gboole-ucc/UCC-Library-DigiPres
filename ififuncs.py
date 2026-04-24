@@ -1,3 +1,9 @@
+
+# This originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
+# It was created by Kieran O'Leary for ifiscripts. With contributions from Yazhou He, Niamh Murphy,mtonerifi and padraic7a. 
+# It is licensed under the MIT License (https://opensource.org/licenses/MIT)
+# It is used here in UCC-Library-DigiPres repo with acknowledgement and thanks to the original author(s) and IFI.
+
 '''
 A collection of functions that other scripts can use.
 

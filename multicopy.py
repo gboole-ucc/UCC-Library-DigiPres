@@ -1,13 +1,18 @@
 #!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+
+# This script originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
+# It was written by Kieran O'Leary for ifiscripts. It is licensed under the MIT License (https://opensource.org/licenses/MIT)
+# It is used here in UCC-Library-DigiPres repo with acknowledgement and thanks to the original author(s) and IFI.
+
 '''
-Launches multiple copyto jobs. This is different to masscopy.py,
-which takes a single directory as input and launches multiple copyto jobs.
+Launches multiple copyit jobs. This is different to masscopy.py,
+which takes a single directory as input and launches multiple copyit jobs.
 This script takes multiple inputs and copies them to the output directory.
 Make God have mercy on us all
 '''
 
 import argparse
-import copyto
+import copyit
 import masscopy
 import ififuncs
 
@@ -16,9 +21,9 @@ def parse_args():
     Accepts command line arguments.
     '''
     parser = argparse.ArgumentParser(
-        description='Performs copyto.py in a batch'
-        'Launches multiple copyto jobs. This is different to masscopy.py,'
-        'which takes a single directory as input and launches multiple copyto jobs.'
+        description='Performs copyit.py in a batch'
+        'Launches multiple copyit jobs. This is different to masscopy.py,'
+        'which takes a single directory as input and launches multiple copyit jobs.'
         'This script takes multiple inputs and copies them to the output directory.'
         ' Written by Kieran O\'Leary.')
     parser.add_argument(
@@ -51,12 +56,12 @@ def main():
     args = parse_args()
     desktop_logs_dir = ififuncs.make_desktop_logs_dir()
     for i in args.i:
-        copyto_cmd = [i, args.o]
+        copyit_cmd = [i, args.o]
         if args.l:
-            copyto_cmd.append('-l')
+            copyit_cmd.append('-l')
         elif args.y:
-            copyto_cmd.append('-y')
-        log_names.append(copyto.main(copyto_cmd))
+            copyit_cmd.append('-y')
+        log_names.append(copyit.main(copyit_cmd))
     print('********\nWARNING - Please check the ifiscripts_logs directory on your Desktop to verify if ALL of your transfers were successful')
     masscopy.analyze_reports(log_names, desktop_logs_dir)
 

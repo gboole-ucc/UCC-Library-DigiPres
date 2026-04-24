@@ -1,11 +1,16 @@
 #!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+
+# This script originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
+# It was written by Kieran O'Leary for ifiscripts. It is licensed under the MIT License (https://opensource.org/licenses/MIT)
+# It is used here in UCC-Library-DigiPres repo with acknowledgement and thanks to the original author(s) and IFI.
+
 '''
 Launches copyit.py for subfolders that have md5 anifests.
 '''
 import os
 import argparse
 import time
-import copyto
+import copyit
 from ififuncs import make_desktop_logs_dir
 
 
@@ -135,12 +140,12 @@ def main():
             print(' - %s already exists, skipping' % absolute_path)
         else:
             desktop_logs_dir = make_desktop_logs_dir()
-            copyto_cmd = [os.path.join(args.input, i), args.o]
+            copyit_cmd = [os.path.join(args.input, i), args.o]
             if args.l:
-                copyto_cmd.append('-l')
+                copyit_cmd.append('-l')
             elif args.y:
-                copyto_cmd.append('-y')
-            log_name = copyto.main(copyto_cmd)
+                copyit_cmd.append('-y')
+            log_name = copyit.main(copyit_cmd)
             log_names.append(log_name)
             processed_dirs.append(os.path.basename(os.path.join(args.input, i)))
             print(' - ********\nWARNING - Please check the ifiscripts_logs directory on your Desktop to verify if ALL of your transfers were successful')
