@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from html import parser
 import os
 import sys
 import argparse
@@ -61,11 +62,14 @@ def arg_parse():
                         default='n', 
                         help="(KFS - Keep folder structure) : Enter your choice on preserving directory structure for the objects in the destination")
     
-    parser.add_argument('-jhove',
-                        choices=['y', 'n'],
-                        type=str,
-                        default='y', 
-                        help="Enter your choice on using 'jhove' utility IF available")
+    parser.add_argument(
+                        '--no-jhove',
+                        dest='jhove',
+                        action='store_false',
+                        help="Disable JHOVE validation (enabled by default)")
+    
+    # Set JHove to run as default explicitly
+    parser.set_defaults(jhove=True)
 
     parser.add_argument('--no-brunnhilde',
                         dest='brunnhilde',
@@ -74,12 +78,11 @@ def arg_parse():
     
     # Set Brunnhilde to run as default explicitly
     parser.set_defaults(brunnhilde=True)
-    ''
+
     # --noclam flag: disables ClamAV when running Brunnhilde
     parser.add_argument('--noclam',
                         action='store_true',
                         help='Disable ClamAV when running Brunnhilde (enabled by default)')
-    '' 
 
     parser.add_argument('-other_sup',
                         type=str,
@@ -206,20 +209,46 @@ def uid_pattern_check(uid):
 # in the "objects" folder and stores the results in the "metadata" folder.
 def jhove_audit(args, log_name_source):
     
-    print(' - JHOVE available/enabled - Beginning auditing')
-    generate_log(log_name_source, ' - JHOVE available/enabled - Beginning auditing')
+    print(' - JHOVE enabled - Beginning auditing')
+    generate_log(log_name_source, ' - JHOVE enabled - Beginning auditing')
 
+    # Expected JHOVE binary location
+    jhove_bin = os.path.expanduser("~/jhove/jhove")
+    
+    # Check that JHOVE exists
+    if not os.path.isfile(jhove_bin):
+            msg = ' - JHOVE enabled but not found in the system - skipping jhove auditing'
+            print(msg)
+            generate_log(log_name_source, msg)
+            return
+
+    # Output xml path
     jhove_xml_file = os.path.join(args.metadata_folder, args.uid+"_jhove_audit.xml")
-    command = f"""\
-    {os.path.expanduser("~/")}jhove/jhove -h Audit -o "{jhove_xml_file}" "{args.objects_folder}"
-    """
-    print(command)
-    subprocess.run(command, shell=True, text=True)
+   
+    pcommand = [
+        jhove_bin,
+        "-h", "Audit",
+        "-o", jhove_xml_file,
+        args.objects_folder
+    ]
+   
+    print("Running JHOVE command:" + ' '.join(pcommand))
+    generate_log(log_name_source, "Running JHOVE command: " + " ".join(pcommand))
 
-    print(' - JHOVE available/enabled - auditing process completed')
-    generate_log(log_name_source, ' - JHOVE available/enabled - auditing process completed')
-    return
+    # Run JHOVE
+    result = subprocess.run(pcommand, text=True)
+    
+    # Check exit status
+    if result.returncode != 0:
+        msg = ' - JHOVE auditing failed to complete successfully with exit code' + str(result.returncode) + ' - skipping jhove auditing'
+        print(msg)
+        generate_log(log_name_source, msg)
+        return
+    
+    print(' - JHOVE auditing completed successfully')
+    generate_log(log_name_source, ' - JHOVE auditing completed successfully')
 
+    
 # Below function performs the brunnhilde/ClamAv virus scanning of the "objects" folder
 # content and stores the results in the "metadata" folder.
 def brunnhilde_scan(args, log_name_source):
@@ -294,6 +323,11 @@ def brunnhilde_scan(args, log_name_source):
 # are entered properly by the user.
 def main():
     args = arg_parse()
+
+    # Track JHOVE execution outcome for final reporting
+    jhove_ran = False
+    jhove_skipped_unsupported = False
+
     input_path = args.i
     log_name_source_ = "ip_creator_"  + str(os.path.basename(input_path)) + time.strftime("_%Y_%m_%dT%H_%M_%S") + ".log"
     desktop_logs_dir = make_desktop_logs_dir()
@@ -435,13 +469,29 @@ def main():
             print("Enter a valid directory or file to copied in the destination")
             generate_log(log_name_source, "Enter a valid directory or file to copied in the destination - Exiting")
     
-    if args.jhove == 'y' and args.format in ['.tiff', '.jpeg', '.jpeg2000', '.pdf']:
+   # Formats that JHOVE can audit properly based on the JHOVE documentation: https://jhove.openpreservation.org/formats.html
+    JHOVE_FORMATS = {'.tif', '.tiff', '.jpg', '.jpeg', '.jp2', '.pdf'}
+
+    if args.jhove and any(ext in JHOVE_FORMATS for ext in args.format_list):
         jhove_audit(args, log_name_source)
-    
+        jhove_ran = True
+    elif args.jhove:
+        jhove_skipped_unsupported = True
+        msg = (
+            "JHOVE enabled, but selected format is not supported by JHOVE "
+            "- skipping jhove audit"
+        )
+        print(msg)
+        generate_log(log_name_source, msg)
+    else:
+        msg = "JHOVE auditing is disabled - skipping jhove audit report generation"
+        print(msg)
+        generate_log(log_name_source, msg)
+
     if args.brunnhilde:
         brunnhilde_scan(args, log_name_source)
 
-    # final brunnhilde nd clamAV status message
+    # final brunnhilde and clamAV status message
     if not args.brunnhilde:
         msg = (
             "- Process completed. Brunnhilde was disabled. "
@@ -459,7 +509,19 @@ def main():
         )
     print(msg)
     generate_log(log_name_source, msg)
-    
+
+    # final JHOVE status message
+    if jhove_ran:
+        msg = "JHOVE auditing was enabled"
+        print(msg)
+        generate_log(log_name_source, msg)
+    elif jhove_skipped_unsupported:
+        msg = (
+            "- JHOVE auditing was disabled. JHOVE cannot meaningfully audit your chosen format."
+            "- See JHOVE documentation: https://jhove.openpreservation.org/formats.html"
+        )
+        print(msg)
+        generate_log(log_name_source, msg)
 
     if os.path.exists(supplement_folder):
         if len(os.listdir(supplement_folder)) == 0:
