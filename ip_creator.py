@@ -440,6 +440,8 @@ def main():
     args.metadata_folder = metadata_folder
     os.makedirs(metadata_folder, exist_ok=True)
 
+    # Always create the supplement directory, even if it remains empty  
+
     supplement_folder = os.path.join(output_path, "supplement")
     args.supplement_folder = supplement_folder
     
@@ -525,11 +527,7 @@ def main():
         )
         print(msg)
         generate_log(log_name_source, msg)
-
-    if os.path.exists(supplement_folder):
-        if len(os.listdir(supplement_folder)) == 0:
-            os.removedirs(supplement_folder)
-    
+      
     return
 
 # Below code marks the start of execution of the program.
