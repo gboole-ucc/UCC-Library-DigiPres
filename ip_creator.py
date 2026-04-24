@@ -125,6 +125,11 @@ def objects_and_supplements_ip(args, log_name_source):
     input_path = args.i
     file_formats = args.format_list
     supplement_formats = args.supplement
+
+    # Normalise supplement formats to a list for consistent matching
+    if isinstance(supplement_formats, str):
+        supplement_formats = supplement_formats.strip().split()
+        
     output_path = os.path.join(args.o, args.uid)
     objects_folder = args.objects_folder
     supplement_folder = args.supplement_folder
@@ -290,12 +295,21 @@ def brunnhilde_scan(args, log_name_source):
     print(command)
     subprocess.run(command, text=True)
 
-
-    os.rename(os.path.join(brunnhilde_output_folder, "report.html"), \
-              os.path.join(brunnhilde_output_folder, args.uid+"_report.html"))
+    # Safely rename Brunnhilde output files only if they exist.
+    # Brunnhilde may fail or produce partial output; these checks 
+    # prevent late-stage crashes when expected report files are missing
     
-    os.rename(os.path.join(brunnhilde_output_folder, "siegfried.csv"), \
-              os.path.join(brunnhilde_output_folder, args.uid+"_siegfried.csv"))
+    report_file = os.path.join(brunnhilde_output_folder, "report.html")
+    if os.path.exists(report_file):
+        os.rename(
+            report_file, 
+                  os.path.join(brunnhilde_output_folder, args.uid+"_report.html"))
+    
+    siegfried_file = os.path.join(brunnhilde_output_folder, "siegfried.csv")
+    if os.path.exists(siegfried_file):
+        os.rename(
+            siegfried_file, 
+            os.path.join(brunnhilde_output_folder, args.uid+"_siegfried.csv"))
     
     # Rename ClamAV log only if it exists (i.e. ClamAV was run)
     virus_log = os.path.join(
