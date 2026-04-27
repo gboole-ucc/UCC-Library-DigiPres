@@ -1,4 +1,5 @@
-#!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+#!/usr/bin/env python3
+
 
 # This script originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
 # It was written by Kieran O'Leary for ifiscripts. It is licensed under the MIT License (https://opensource.org/licenses/MIT)

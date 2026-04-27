@@ -1,4 +1,4 @@
-#!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+#!/usr/bin/env python3
 
 # This script originates from ifiscripts repository. https://github.com/Irish-Film-Institute/IFIscripts
 # It was written by Kieran O'Leary. It is licensed under the MIT License (https://opensource.org/licenses/MIT)
@@ -17,6 +17,39 @@ from ififuncs import generate_log
 from ififuncs import manifest_file_count
 from ififuncs import hashlib_manifest
 from ififuncs import make_desktop_logs_dir, make_desktop_manifest_dir
+
+def create_manifest_for_directory(
+        source_dir,
+        manifest_path,
+        use_sha512=False
+    ):
+
+    if not os.path.isdir(source_dir):
+        raise ValueError(f"Source directory '{source_dir}' does not exist or is not a directory.")
+
+    # Remove unwanted system files before manifesting
+    log_dir = os.path.dirname(manifest_path)
+    log_name = os.path.join(
+        log_dir,
+        f"manifest_creation_{os.path.basename(source_dir)}_{time.strftime('%Y_%m_%dT%H_%M_%S')}.log"    
+    )
+    remove_bad_files(source_dir, log_name)
+    if use_sha512:
+        ififuncs.sha512_manifest(
+            source_dir, 
+            manifest_path, 
+            os.path.dirname (manifest_path)
+            )
+    else:
+        hashlib_manifest(
+            source_dir, 
+            manifest_path, 
+            os.path.dirname (manifest_path)
+            )
+        return manifest_path        
+
+
+
 
 
 def remove_bad_files(root_dir, log_name_source):
