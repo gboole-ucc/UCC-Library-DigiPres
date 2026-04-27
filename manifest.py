@@ -12,11 +12,11 @@ import os
 import argparse
 import time
 import shutil
-import ififuncs
-from ififuncs import generate_log
-from ififuncs import manifest_file_count
-from ififuncs import hashlib_manifest
-from ififuncs import make_desktop_logs_dir, make_desktop_manifest_dir
+import toolkit.ififuncs
+from toolkit.ififuncs import generate_log
+from toolkit.ififuncs import manifest_file_count
+from toolkit.ififuncs import hashlib_manifest
+from toolkit.ififuncs import make_desktop_logs_dir, make_desktop_manifest_dir
 
 def create_manifest_for_directory(
         source_dir,
@@ -35,7 +35,7 @@ def create_manifest_for_directory(
     )
     remove_bad_files(source_dir, log_name)
     if use_sha512:
-        ififuncs.sha512_manifest(
+        toolkit.ififuncs.sha512_manifest(
             source_dir, 
             manifest_path, 
             os.path.dirname (manifest_path)
@@ -55,7 +55,7 @@ def create_manifest_for_directory(
 def remove_bad_files(root_dir, log_name_source):
     '''
     Removes unwanted files.
-    Verify if this is different than the same function in ififuncs.
+    Verify if this is different than the same function in toolkit.ififuncs.
     '''
     rm_these = ['.DS_Store', 'Thumbs.db', 'desktop.ini']
     for root, _, files in os.walk(root_dir):
@@ -148,9 +148,9 @@ def main(args_):
                 log_name_source,
                 'EVENT = Generating manifest: status=started, eventType=message digest calculation, module=%s, agent=Linux' % module
             )
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
-        'eventDetail=manifest.py %s' % ififuncs.get_script_version('manifest.py'))
+        'eventDetail=manifest.py %s' % toolkit.ififuncs.get_script_version('manifest.py'))
     generate_log(log_name_source, 'Source: %s' % source)
     if os.path.isfile(source):
         print('\nFile checksum is not currently supported, only directories.\n')
@@ -180,13 +180,13 @@ def main(args_):
             generate_log(log_name_source, 'EVENT = Generating source manifest')
             if args.f:
                 if args.sha512:
-                    ififuncs.sha512_manifest(source, manifest, source)
+                    toolkit.ififuncs.sha512_manifest(source, manifest, source)
                 else:
                     hashlib_manifest(source, manifest, source)
                 shutil.move(log_name_source, source)
             else:
                 if args.sha512:
-                    ififuncs.sha512_manifest(source, manifest, source_parent_dir)
+                    toolkit.ififuncs.sha512_manifest(source, manifest, source_parent_dir)
                 else:
                     hashlib_manifest(source, manifest, source_parent_dir)
         except OSError as e:

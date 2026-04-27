@@ -13,8 +13,8 @@ import os
 import argparse
 import time
 import unicodedata
-import ififuncs
-from ififuncs import make_desktop_logs_dir
+import toolkit.ififuncs
+from toolkit.ififuncs import make_desktop_logs_dir
 
 
 def get_input(manifest):
@@ -44,7 +44,7 @@ def parse_manifest(manifest, log_name_source, args):
         source_dir = os.path.join(
             os.path.dirname(manifest), os.path.basename(manifest).replace('_manifest-sha512.txt','')
         )
-    source_count, file_list = ififuncs.count_stuff(source_dir)
+    source_count, file_list = toolkit.ififuncs.count_stuff(source_dir)
     missing_files_list = []
     manifest_dict = {}
     paths = []
@@ -66,7 +66,7 @@ def parse_manifest(manifest, log_name_source, args):
             if not os.path.isfile(path):
                 path = unicodedata.normalize('NFD', path)
             if not os.path.isfile(path):
-                ififuncs.generate_log(
+                toolkit.ififuncs.generate_log(
                     log_name_source,
                     '%s is missing' % path
                 )
@@ -83,20 +83,20 @@ def parse_manifest(manifest, log_name_source, args):
             if i not in paths:
                 print((i, 'is present in your source directory but not in the source manifest'))
         if not args.y:
-            proceed = ififuncs.ask_yes_no('Do you want to proceed regardless?')
+            proceed = toolkit.ififuncs.ask_yes_no('Do you want to proceed regardless?')
     if proceed == 'N':
         print('Exiting')
         sys.exit()
     else:
         if len(missing_files_list) > 0:
             print(('The number of missing files: %s' % len(missing_files_list)))
-            ififuncs.generate_log(
+            toolkit.ififuncs.generate_log(
                 log_name_source,
                 'The number of missing files is: %s' % len(missing_files_list)
             )
         elif len(missing_files_list) == 0:
             print('All files present')
-            ififuncs.generate_log(
+            toolkit.ififuncs.generate_log(
                 log_name_source,
                 'All files present'
             )
@@ -106,7 +106,7 @@ def validate(manifest_dict, manifest, log_name_source, missing_files_list):
     '''
     Validates the files listed in the checksum manifest.
     '''
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
         'Validating %s ' % manifest
     )
@@ -117,14 +117,14 @@ def validate(manifest_dict, manifest, log_name_source, missing_files_list):
     for i in sorted(manifest_dict.keys()):
         print(('Validating %s' % i))
         if 'manifest-sha512.txt' in manifest:
-            current_hash = ififuncs.hashlib_sha512(i)
+            current_hash = toolkit.ififuncs.hashlib_sha512(i)
         else:
-            current_hash = ififuncs.hashlib_md5(i)
+            current_hash = toolkit.ififuncs.hashlib_md5(i)
         if current_hash == manifest_dict[i]:
             print(('%s has validated' % i))
         else:
             print(('%s has mismatched checksum - %s expected - %s hashed' % (i, manifest_dict[i], current_hash)))
-            ififuncs.generate_log(
+            toolkit.ififuncs.generate_log(
                 log_name_source,
                 '%s has mismatched checksum - %s expected - %s hashed' % (i, manifest_dict[i], current_hash)
             )
@@ -132,7 +132,7 @@ def validate(manifest_dict, manifest, log_name_source, missing_files_list):
             error_counter += 1
     if error_counter > 0:
         print(('\n\n*****ERRORS***********!!!!\n***********\nThe number of mismatched checksums is: %s\n***********\n' % error_counter))
-        ififuncs.generate_log(
+        toolkit.ififuncs.generate_log(
             log_name_source,
             'The number of mismatched checksums is: %s' % error_counter
         )
@@ -141,13 +141,13 @@ def validate(manifest_dict, manifest, log_name_source, missing_files_list):
             print(i)
     elif len(missing_files_list) == 0:
         print('All checksums have validated')
-        ififuncs.generate_log(
+        toolkit.ififuncs.generate_log(
             log_name_source,
             'All checksums have validated'
         )
     if len(missing_files_list) > 0:
         print(('ERRORS - The number of missing files: %s' % len(missing_files_list)))
-        ififuncs.generate_log(
+        toolkit.ififuncs.generate_log(
             log_name_source,
             'ERRORS - The number of mismatched checksums is: %s' % len(missing_files_list)
         )
@@ -208,9 +208,9 @@ def log_results(manifest, log, args):
                     for lines in manifest_lines:
                         if logname in lines:
                             if 'manifest-sha512.txt' in possible_manifest:
-                                lines = lines[:127].replace(lines[:127], ififuncs.hashlib_sha512(logfile)) + lines[128:]
+                                lines = lines[:127].replace(lines[:127], toolkit.ififuncs.hashlib_sha512(logfile)) + lines[128:]
                             elif '_manifest.md5' in possible_manifest:
-                                lines = lines[:31].replace(lines[:31], ififuncs.hashlib_md5(logfile)) + lines[32:]
+                                lines = lines[:31].replace(lines[:31], toolkit.ififuncs.hashlib_md5(logfile)) + lines[32:]
                         updated_manifest.append(lines)
                 with open(possible_manifest, 'w') as fo:
                     for lines in updated_manifest:
@@ -226,15 +226,15 @@ def main(args_):
     desktop_logs_dir = make_desktop_logs_dir()
     log_name_source_ = os.path.basename(args.input) + time.strftime("_%Y_%m_%dT%H_%M_%S")
     log_name_source = "%s/%s_fixity_validation.log" % (desktop_logs_dir, log_name_source_)
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
         'EVENT = validate.py started'
     )
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
-        'eventDetail=validate.py %s' % ififuncs.get_script_version('validate.py')
+        'eventDetail=validate.py %s' % toolkit.ififuncs.get_script_version('validate.py')
     )
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
         'Command line arguments: %s' % args
     )

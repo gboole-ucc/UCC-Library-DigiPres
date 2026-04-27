@@ -11,7 +11,7 @@ import os
 import argparse
 import time
 import copyit
-from ififuncs import make_desktop_logs_dir
+from toolkit.ififuncs import make_desktop_logs_dir
 
 
 def analyze_log(logfile):

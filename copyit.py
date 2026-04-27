@@ -21,13 +21,13 @@ import hashlib
 import shutil
 import unicodedata
 from builtins import input
-import ififuncs
-from ififuncs import make_desktop_logs_dir, make_desktop_manifest_dir, generate_log
+import toolkit.ififuncs
+from toolkit.ififuncs import make_desktop_logs_dir, make_desktop_manifest_dir, generate_log
 
 
 def hashlib_md5(filename):
     '''
-    Create an md5 checksum. This should use the ififuncs function instead.
+    Create an md5 checksum. This should use the toolkit.ififuncs function instead.
     '''
     read_size = 0
     last_percent_done = 0
@@ -469,21 +469,21 @@ def setup(args_):
     desktop_logs_dir = make_desktop_logs_dir()
     log_name_source = "%s/%s.log" % (desktop_logs_dir, log_name_filename)
     generate_log(log_name_source, 'copyit.py started.')
-    ififuncs.generate_log(
+    toolkit.ififuncs.generate_log(
         log_name_source,
-        'eventDetail=copyit.py %s' % ififuncs.get_script_version('copyit.py'))
+        'eventDetail=copyit.py %s' % toolkit.ififuncs.get_script_version('copyit.py'))
     generate_log(log_name_source, 'Source: %s' % source)
     generate_log(log_name_source, 'Destination: %s'  % destination)
     print('Checking total size of input folder')
-    total_input_size = ififuncs.get_folder_size(os.path.abspath(args.source))
+    total_input_size = toolkit.ififuncs.get_folder_size(os.path.abspath(args.source))
     print('Checking if enough space in destination folder')
-    free_space = ififuncs.get_free_space(args.destination)
+    free_space = toolkit.ififuncs.get_free_space(args.destination)
     if total_input_size > free_space:
         print('You do not have enough free space!')
         if args.y:
             go_forth_blindly = 'Y'
         else:
-            go_forth_blindly = ififuncs.ask_yes_no('Would you like to continue anyway? Press Y or N')
+            go_forth_blindly = toolkit.ififuncs.ask_yes_no('Would you like to continue anyway? Press Y or N')
         if go_forth_blindly == 'Y':
             generate_log(log_name_source, 'You do not have enough free space!, but the user has decided to continue anyhow')
         else:
@@ -702,7 +702,7 @@ def main(args_):
     remove_bad_files(
         source, log_name_source
     )
-    source_count, file_list = ififuncs.count_stuff(
+    source_count, file_list = toolkit.ififuncs.count_stuff(
         source
     )
     manifest_existence(

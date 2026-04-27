@@ -14,7 +14,7 @@ Make God have mercy on us all
 import argparse
 import copyit
 import masscopy
-import ififuncs
+import toolkit.ififuncs
 
 def parse_args():
     '''
@@ -54,7 +54,7 @@ def main():
     '''
     log_names = []
     args = parse_args()
-    desktop_logs_dir = ififuncs.make_desktop_logs_dir()
+    desktop_logs_dir = toolkit.ififuncs.make_desktop_logs_dir()
     for i in args.i:
         copyit_cmd = [i, args.o]
         if args.l:

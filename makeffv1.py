@@ -18,20 +18,20 @@ import itertools
 import getpass
 from glob import glob
 try:
-    from ififuncs import set_environment
-    from ififuncs import hashlib_manifest
-    from ififuncs import make_mediatrace
-    from ififuncs import make_mediainfo
-    from ififuncs import get_mediainfo
-    from ififuncs import append_csv
-    from ififuncs import create_csv
-    from ififuncs import generate_log
-    from ififuncs import get_ffmpeg_fmt
+    from toolkit.ififuncs import set_environment
+    from toolkit.ififuncs import hashlib_manifest
+    from toolkit.ififuncs import make_mediatrace
+    from toolkit.ififuncs import make_mediainfo
+    from toolkit.ififuncs import get_mediainfo
+    from toolkit.ififuncs import append_csv
+    from toolkit.ififuncs import create_csv
+    from toolkit.ififuncs import generate_log
+    from toolkit.ififuncs import get_ffmpeg_fmt
 except ImportError:
-    print('*** ERROR - IFIFUNCS IS MISSING - *** \n')
-    'Makeffv1 requires that ififuncs.py is located in the same directory'
+    print('*** ERROR - toolkit.ififuncs IS MISSING - *** \n')
+    'Makeffv1 requires that toolkit.ififuncs.py is located in the same directory'
     ' as some functions are located in that script -'
-    'https://github.com/kieranjol/IFIscripts/blob/master/ififuncs.py'
+    'https://github.com/kieranjol/IFIscripts/blob/master/toolkit.ififuncs.py'
     sys.exit()
 
 def read_non_comment_lines(infile):
