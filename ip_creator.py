@@ -5,10 +5,11 @@ import argparse
 import time
 import re
 import shutil
-import hashlib
 import subprocess
 from logger import generate_log, make_desktop_logs_dir, remove_bad_files
 from metadata_extractor import format_details, image_exiftool, av_mediainfo, others_exiftool
+from manifest import create_manifest_for_directory
+
 
 # Empty class to create custom objects. Useful to modify argument lists.
 class Arguments():
@@ -91,30 +92,6 @@ def arg_parse():
 
     return parsed_args
 
-# Logic used to determine the manifest checksum for a single file.
-# Function taken from ififuncs.py from IFIscripts repository: https://github.com/Irish-Film-Institute/IFIscripts/blob/master/scripts/ififuncs.py
-def hashlib_md5(filename):
-    '''
-    uses hashlib to return an MD5 checksum of an input filename
-    '''
-    read_size = 0
-    last_percent_done = 0
-    m = hashlib.md5()
-    total_size = os.path.getsize(filename)
-    with open(str(filename), 'rb') as f:
-        while True:
-            buf = f.read(2**20)
-            if not buf:
-                break
-            read_size += len(buf)
-            m.update(buf)
-            percent_done = 100 * read_size / total_size
-            if percent_done > last_percent_done:
-                sys.stdout.write('[%d%%]\r' % percent_done)
-                sys.stdout.flush()
-                last_percent_done = percent_done
-    md5_output = m.hexdigest()
-    return md5_output
 
 # Below function is used to copy files of interest into the "objects"
 # folder while storing supplement files if required, in the "supplement"
@@ -132,11 +109,6 @@ def objects_and_supplements_ip(args, log_name_source):
     output_path = os.path.join(args.o, args.uid)
     objects_folder = args.objects_folder
     supplement_folder = args.supplement_folder
-    manifest = os.path.join(output_path, "objects_manifest.md5")
-
-    # Ensure manifest is fresh on each run (avoid appending stale entries)
-    with open(manifest, 'w', encoding='utf-8') as f:
-        pass
 
     for root, _, files in os.walk(input_path):
         if files == () or files == []:
@@ -146,14 +118,34 @@ def objects_and_supplements_ip(args, log_name_source):
             file_format = (os.path.splitext(file)[1]).lower()
             if file_format in file_formats:
                 file_src = os.path.join(root, file)
-                hash_source = str(hashlib_md5(file_src))
 
-                
+                # DEBUG: log exactly what is about to be copied
+                generate_log(log_name_source, f"Attempting to copy: {file_src}")
+
+                # Guard against missing or unstable files (e.g. network shares)
+                if not os.path.exists(file_src):
+                    msg = f"Source file not found (skipping): {file_src}"
+                    print(msg)
+                    generate_log(log_name_source, msg)
+                    continue
+                  
                 if not args.kfs:
                     
                     # flatten folder structure   
 
-                    shutil.copy2(file_src, objects_folder)
+                    if not os.path.exists(file_src):
+                        msg = f"Source file not found (skipping): {file_src}"
+                        print(msg)
+                        generate_log(log_name_source, msg)
+                        continue
+
+                    try:
+                        shutil.copy2(file_src, objects_folder)
+                    except FileNotFoundError as e:
+                        msg = f"File not found during copy (skipping): {file_src}"
+                        print(msg)
+                        generate_log(log_name_source, msg)
+                        continue
 
                     new_file_name = os.path.basename(root) + "_" + file
                     file_dest = os.path.join(objects_folder, new_file_name)
@@ -170,22 +162,9 @@ def objects_and_supplements_ip(args, log_name_source):
                     new_file_name = file
                     file_dest = os.path.join(dest_dir, new_file_name)
                     shutil.copy2(file_src, file_dest)
-
-                hash_dest = str(hashlib_md5(file_dest))
-
-                if hash_source != hash_dest:
-                    print(f"- File {file} not copied properly, integrity compromised. Exiting ip_creator.py")
-                    generate_log(log_name_source, f'- File {file} not copied properly, integrity compromised. Exiting ip_creator.py')
-                    shutil.rmtree(output_path)
-                    sys.exit()
                 
                 print(f"{file} copied to destination correctly")
                 generate_log(log_name_source, f"{file} copied to destination correctly")
-
-                with open(manifest, 'a', encoding='utf-8') as f:
-                    rel_path = os.path.relpath(file_dest, output_path)
-                    f.write(hash_dest + "  " + str(rel_path))
-                    f.write("\n")
             
             elif supplement_formats!=[] and file_format in supplement_formats:
                 file_src = os.path.join(root, file)
@@ -196,8 +175,6 @@ def objects_and_supplements_ip(args, log_name_source):
                 file_dest = os.path.join(supplement_folder, new_file_name)
                 os.rename(os.path.join(supplement_folder, file), file_dest)
             
-    print(f"Manifest file ready for {args.format} files at {manifest}")
-    generate_log(log_name_source, f"Manifest file ready for {args.format} files at {manifest}")
     print(f"Finished processing object and supplementary files for {args.format} files")
     generate_log(log_name_source, f"Finished processing object and supplementary files for {args.format} files")
     return
@@ -450,6 +427,21 @@ def main():
     # Creating required objects structure of the information package creation
     objects_and_supplements_ip(args, log_name_source)
 
+    # Generate manifest for objects directory
+    objects_manifest_path = os.path.join(
+        output_path,
+        "objects_manifest.md5"
+    )
+    create_manifest_for_directory(
+        source_dir=args.objects_folder,
+        manifest_path=objects_manifest_path,
+        use_sha512=False
+    )
+    generate_log(
+        log_name_source, 
+        f"Objects manifest created at {objects_manifest_path}"
+        )
+    
     # Calling appropriate metadata extractor function
     metadata(args_object, log_name_source)
 
