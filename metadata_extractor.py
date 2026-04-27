@@ -9,10 +9,13 @@ from logger import make_desktop_logs_dir, generate_log, remove_bad_files
 import csv
 from pymediainfo import MediaInfo
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Below function provides the list of file formats
 # mapped to the file of interest
 def format_details(format, file):
-    df = pd.read_csv(file, header=0, index_col="format")
+    file_path = os.path.join(BASE_DIR, file)
+    df = pd.read_csv(file_path, header=0, index_col='format')
     try:
         mapped_formats = list(map(str.strip, df.loc[format, "map_list"].split(",")))
     except: 

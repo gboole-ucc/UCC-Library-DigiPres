@@ -17,6 +17,49 @@ import toolkit.ififuncs
 from toolkit.ififuncs import make_desktop_logs_dir
 
 
+def validate_objects_against_manifest(manifest_path, assume_yes=True):
+    '''
+    Library-friendly wrapper for validation logic.
+    Parameters
+    ----------
+    manifest_path : str
+        Path to the checksum manifest (e.g. objects_manifest.md5)
+    assume_yes : bool,
+        If True, auto-accept prompts (equivalent to -y)
+
+    Returns
+    -------
+    bool    
+        True if validation passed, False if errors are found
+    '''
+    class Args:
+        pass
+
+    args = Args()
+    args.input = manifest_path
+    args.update_log = False
+    args.y = assume_yes
+
+    desktop_logs_dir = make_desktop_logs_dir()
+    log_name_source_ = (
+        os.path.basename(manifest_path)
+        + time.strftime("_%Y_%m_%d_%H_%M_%S")
+    )
+    log_name_source = (
+        f"{desktop_logs_dir}/{log_name_source_}_fixity_validation.log"
+    )
+
+    toolkit.ififuncs.generate_log(
+        log_name_source,
+        'EVENT = validate.py started'
+    )
+
+    _, error_counter = check_manifest(args, log_name_source)
+
+    # Validation passes only if there are zero errors
+    return error_counter == 0
+
+
 def get_input(manifest):
     '''
     Figures out what kind of input is passed to the script.

@@ -9,6 +9,7 @@ import subprocess
 from logger import generate_log, make_desktop_logs_dir, remove_bad_files
 from metadata_extractor import format_details, image_exiftool, av_mediainfo, others_exiftool
 from manifest import create_manifest_for_directory
+from validate import validate_objects_against_manifest
 
 
 # Empty class to create custom objects. Useful to modify argument lists.
@@ -441,6 +442,19 @@ def main():
         log_name_source, 
         f"Objects manifest created at {objects_manifest_path}"
         )
+    
+    # Validate objects against the manifest
+    validation_ok = validate_objects_against_manifest(objects_manifest_path)
+
+    if not validation_ok:
+        msg = "Fixity validation failed - exiting process"
+        print(msg)
+        generate_log(log_name_source, msg)
+        sys.exit()
+
+    msg = "Fixity validation passed successfully"
+    print(msg)
+    generate_log(log_name_source, msg)    
     
     # Calling appropriate metadata extractor function
     metadata(args_object, log_name_source)
