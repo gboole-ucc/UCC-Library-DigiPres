@@ -236,7 +236,56 @@ def jhove_audit(args, log_name_source):
     print(' - JHOVE auditing completed successfully')
     generate_log(log_name_source, ' - JHOVE auditing completed successfully')
 
+
+
+def run_freshclam(log_name_source):
+    '''Run freshclam to update ClamAV virus definitions before scanning.'''
     
+    print(' - Updating ClamAV virus definitions with freshclam...')
+    generate_log(
+        log_name_source, 
+        ' - Updating ClamAV virus definitions with freshclam...'
+    )
+    
+    # Base freshclam command
+    command = ["freshclam"]
+
+    try: 
+        result = subprocess.run(
+            command, 
+            text=True, 
+            capture_output=True
+        )
+
+        # Log stdout and stderr for auditing/debugging
+        if result.stdout:
+            generate_log(log_name_source, result.stdout)
+
+        if result.stderr:
+            generate_log(log_name_source, result.stderr)
+
+        # Check exit status
+        if result.returncode != 0:
+            msg = (
+            ' - freshclam failed to update virus definitions with exit code '
+            f'({result.returncode}). ClamAV may be outdated.'
+            )
+            print(msg)
+            generate_log(log_name_source, msg)
+        
+        else:
+            msg = " - freshclam completed successfully"
+            print(msg)
+            generate_log(log_name_source, msg)  
+
+    except FileNotFoundError:
+        msg = (
+        ' - freshclam not found ClamAV may not be installed or not in PATH'
+        '- skipping ClamAV update'
+        )
+        print(msg)
+        generate_log(log_name_source, msg)
+                         
 # Below function performs the brunnhilde/ClamAv virus scanning of the "objects" folder
 # content and stores the results in the "metadata" folder.
 def brunnhilde_scan(args, log_name_source):
@@ -248,6 +297,10 @@ def brunnhilde_scan(args, log_name_source):
         msg = ' - Brunnhilde scan beginning (ClamAV enabled)'
     print(msg)
     generate_log(log_name_source, msg)
+
+    # If ClamAV is enabled, update virus definitions first    
+    if not args.noclam:        
+        run_freshclam(log_name_source)
 
     # Define the Brunnhilde output directory first  
     brunnhilde_output_folder = os.path.join(
