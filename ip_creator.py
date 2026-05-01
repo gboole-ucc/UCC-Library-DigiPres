@@ -533,8 +533,8 @@ def main():
             print("Enter a valid directory or file to copied in the destination")
             generate_log(log_name_source, "Enter a valid directory or file to copied in the destination - Exiting")
     
-   # Formats that JHOVE can audit properly based on the JHOVE documentation: https://jhove.openpreservation.org/formats.html
-    JHOVE_FORMATS = {'.tif', '.tiff', '.jpg', '.jpeg', '.jp2', '.pdf'}
+   # Formats that JHOVE can audit properly based on the JHOVE documentation: https://jhove.openpreservation.org/documentation/
+    JHOVE_FORMATS = {'.aiff', '.ascii', '.gif', '.html', '.tif', '.tiff', '.jpg', '.jpeg', '.jp2', '.pdf', '.wav', '.wave', '.xml'}
 
     if args.jhove and any(ext in JHOVE_FORMATS for ext in args.format_list):
         jhove_audit(args, log_name_source)
@@ -582,7 +582,7 @@ def main():
     elif jhove_skipped_unsupported:
         msg = (
             "- JHOVE auditing was disabled. JHOVE cannot meaningfully audit your chosen format."
-            "- See JHOVE documentation: https://jhove.openpreservation.org/formats.html"
+            "- See JHOVE documentation: https://jhove.openpreservation.org/documentation/"
         )
         print(msg)
         generate_log(log_name_source, msg)
