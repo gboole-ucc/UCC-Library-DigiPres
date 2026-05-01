@@ -75,11 +75,18 @@ def arg_parse():
     # Set JHove to run as default explicitly
     parser.set_defaults(jhove=True)
 
-    parser.add_argument('-brunnhilde',
-                        choices=['y', 'n'],
-                        type=str,
-                        default='', 
-                        help="Enter your choice on using 'brunnhilde-ClamAV' utility IF available")
+    parser.add_argument('--no-brunnhilde',
+                        dest='brunnhilde',
+                        action='store_false', 
+                        help='Do not run Brunnhilde (enabled by default)')
+    
+    # Set Brunnhilde to run as default explicitly
+    parser.set_defaults(brunnhilde=True)
+
+    # --noclam flag: disables ClamAV when running Brunnhilde
+    parser.add_argument('--noclam',
+                        action='store_true',
+                        help='Disable ClamAV when running Brunnhilde (enabled by default)')
 
     parsed_args = parser.parse_args()
 
@@ -454,12 +461,17 @@ def brunnhilde_scan(args, log_name_source):
     else:
         brunnhilde_output_folder = input_path + "_brunnhilde"
     
-    command = f"""\
-    brunnhilde.py "{input_path}" "{brunnhilde_output_folder}"
-    """
-    print(command)
-    subprocess.run(command, shell=True, text=True)
+    command = [
+        "brunnhilde.py",
+        input_path,
+        brunnhilde_output_folder
+    ]
 
+    if args.noclam:
+        command.append("--no-clamav")
+
+    print("Running Brunnhilde command: " + " ".join(command))
+    subprocess.run(command, text=True)
 
     os.rename(os.path.join(brunnhilde_output_folder, "report.html"), \
               os.path.join(brunnhilde_output_folder, base_folder+"_report.html"))
@@ -523,16 +535,15 @@ def main():
         print(msg)
         generate_log(log_name_source, msg)
 
-    if args.brunnhilde == "":
-        q = input("Would you like to generate a siegfried-brunnhilde virus report? (Ensure \
-                  brunnhilde/clamAV installed in this system. Recommended OS for using this feature is MacOS.\
-                  Provide y/n as your input) ")
-        if q.lower() == 'y':
-            args.brunnhilde = 'y'
-            generate_log(log_name_source, f"Enabling jhove audit report")
-        else:
-            args.brunnhilde = 'n'
-            generate_log(log_name_source, "Ignoring jhove auditing")
+    # --- Brunnhilde / ClamAV handling (default enabled) ---
+    if args.brunnhilde:
+        brunnhilde_scan(args, log_name_source)
+    else:
+        msg = "- Brunnhilde/ClamAV scan disabled by user choice - skipping Brunnhilde/ClamAV scanning"
+        print(msg)
+        generate_log(log_name_source, msg)
+
+
     
     if args.img:
         image_exiftool(args, log_name_source)
@@ -568,16 +579,6 @@ def main():
         else:
             print("Enter a valid directory or file to copied in the destination")
             generate_log(log_name_source, "Enter a valid directory or file to copied in the destination - Exiting")
-    
-    if args.jhove == 'y' and args.img:
-        img_formats_list = list(args.img.split(" "))
-        for f in img_formats_list:
-            if f in ['.jpeg','.tiff','.jpeg2000']:
-                jhove_audit(args, log_name_source)
-                break
-    
-    if args.brunnhilde == 'y':
-        brunnhilde_scan(args, log_name_source)
     
     
 # Below code marks the start of execution of the program.
