@@ -1,5 +1,8 @@
 import os
 import json
+import shutil
+import subprocess
+
 
 # ----------------Filesystem functions----------------
 
@@ -55,34 +58,110 @@ def read_text_file(file_path: str) -> str | None:
     except OSError:
         return None
     
+# ----------------Metadata functions----------------
 
-    # ----------------Metadata functions----------------
-
-    def classify_file(path: str) -> str:
-        '''
-        Classifies a file based on its extension.        
-        Returns one of:
-        'content', 'metadata', 'documentation', 'ignore'
-        '''
-
-
-
-        ext = os.path.splitext(path.lower())[1]
-        if ext in ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.wav', '.mov', '.mp4']:
-            return 'content'
-        if ext in [".xml", ".json", ".csv", ".html"]:
-            return 'metadata'
-        if ext in [".txt", ".md", ".pdf"]:
-            return 'documentation'
-        return 'ignore'
+def classify_file(path: str) -> str:
+    '''
+    Classifies a file based on its extension.        
+    Returns one of:
+    'content', 'metadata', 'documentation', 'ignore'
+    '''
+    ext = os.path.splitext(path.lower())[1]
+    if ext in ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.wav', '.mov', '.mp4']:
+        return 'content'
+    if ext in [".xml", ".json", ".csv", ".html"]:
+        return 'metadata'
+    if ext in [".txt", ".md", ".pdf"]:
+        return 'documentation'
+    return 'ignore'
     
-    def normalise_metadata_keys(metadata: dict) -> dict:
-        '''
-        Normalises metadata keys to lowercase and replaces spaces with underscores.
-        '''
-        normalised: dict = {}
-        for key, value in metadata.items():
-            clean_key = key.strip().lower().replace(' ', '_')
-            normalised[clean_key] = value
-        return normalised
+def normalise_metadata_keys(metadata: dict) -> dict:
+    '''
+    Normalises metadata keys to lowercase and replaces spaces with underscores.
+    '''
+    normalised: dict = {}
+    for key, value in metadata.items():
+        clean_key = key.strip().lower().replace(' ', '_')
+        normalised[clean_key] = value
+    return normalised
     
+# ----------------JHOVE configuration----------------
+
+JHOVE_FORMATS: set[str] = {
+    ".aiff",
+    ".ascii",
+    ".gif",
+    ".html",
+    ".tif",
+    ".tiff",
+    ".jpg",
+    ".jpeg",
+    ".jp2",
+    ".pdf",
+    ".wav",
+    ".wave",
+    ".xml",
+}
+
+# ----------------External application functions----------------
+
+def run_jhove(
+    source_dir: str,
+    output_xml: str,
+    log_func,
+) -> bool:
+    '''
+    Runs a JHOVE audit on the given source directory.
+    '''
+
+    log_func(f"JHOVE enabled - preparing to audit: {source_dir}")
+
+    candidate_bins = [
+        os.path.expanduser("~/jhove/jhove"),
+        shutil.which("jhove"),
+    ]
+
+    jhove_bin = next(
+        (b for b in candidate_bins if b and os.path.isfile(b)),
+        None
+    )
+
+    if not jhove_bin:
+        log_func(
+            "JHOVE enabled but binary not found in PATH or ~/jhove/jhove. "
+            "Skipping JHOVE audit."
+        )
+        return False
+
+    os.makedirs(os.path.dirname(output_xml), exist_ok=True)
+
+    command = [
+        jhove_bin,
+        "-h", "Audit",
+        "-o", output_xml,
+        source_dir,
+    ]
+
+    log_func("Running JHOVE command: " + " ".join(command))
+
+    result = subprocess.run(
+        command,
+        text=True,
+        capture_output=True
+    )
+
+    if result.stdout:
+        log_func(result.stdout)
+
+    if result.stderr:
+        log_func(result.stderr)
+
+    if result.returncode != 0:
+        log_func(
+            f"JHOVE audit failed with exit code {result.returncode}. "
+            "Some files may be unsupported or invalid."
+        )
+        return False
+
+    log_func("JHOVE audit completed successfully.")
+    return True
