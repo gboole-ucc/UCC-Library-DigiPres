@@ -1,5 +1,6 @@
 import os
 import json
+import pandas as pd
 
 # ----------------Filesystem functions----------------
 
@@ -86,3 +87,43 @@ def read_text_file(file_path: str) -> str | None:
             normalised[clean_key] = value
         return normalised
     
+# ----------------Format mapping functions----------------
+
+# Base directory for toolkit resources (CSV mappers live here)
+TOOLKIT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def format_details (format_name: str, csv_filename: str) -> list[str] | str:
+    '''
+    Looks up a logical format name in a format-mapper CSV and returns
+    a list of associate fle extensions.
+    
+    Parameters
+    ----------
+    format_name : str
+        Logical format name (e.g. 'tiff', 'wav', 'pdf')
+    csv_filename : str
+        Name of the CSV mapper file (e.g. 'image_format_mapper.csv')
+    Returns
+    -------
+    list[str] | str
+        List of file extensions (lowercase, including dot), 
+        or an empty string if the format is not found.
+    '''
+    csv_path = os.path.join(TOOLKIT_DIR, csv_filename)
+
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"Format mapper file not found: {csv_path}") 
+    df = pd.read_csv(csv_path, header=0, index_col='format')
+    if format_name in df.index:
+        return ''
+    
+    # Drop empty cells and normalise extensions
+    extensions = (
+        df.loc[format_name]
+        .dropna()
+        .astype(str)
+        .str.lower()
+        .tolist()
+    )
+    
+    return extensions

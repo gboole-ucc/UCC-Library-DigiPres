@@ -370,9 +370,9 @@ def main():
     args_object = Arguments()
 
     # format = args.format
-    # ret = format_details(format, "image_format_mapper.csv")
+    # ret = format_details(format, "toolkit/image_format_mapper.csv")
     # if ret == "":
-    #     ret = format_details(format, "av_format_mapper.csv")
+    #     ret = format_details(format, "toolkit/av_format_mapper.csv")
     #     if ret == "":
     #         generate_log(log_name_source, "Enter a proper av or image format to package")
     #         print("Enter a proper image or av format to package")
@@ -387,17 +387,17 @@ def main():
     #     metadata = image_exiftool
 
     format = args.format
-    if format_details(format, "image_format_mapper.csv") != "":
+    if format_details(format, "toolkit/image_format_mapper.csv") != "":
         args_object.img = format
-        args.format_list = format_details(format, "image_format_mapper.csv")
+        args.format_list = format_details(format, "toolkit/image_format_mapper.csv")
         metadata = image_exiftool
-    elif format_details(format, "av_format_mapper.csv") != "":
+    elif format_details(format, "toolkit/av_format_mapper.csv") != "":
         args_object.av = format
-        args.format_list = format_details(format, "av_format_mapper.csv")
+        args.format_list = format_details(format, "toolkit/av_format_mapper.csv")
         metadata = av_mediainfo
-    elif format_details(format, "other_format_mapper.csv") != "":
+    elif format_details(format, "toolkit/other_format_mapper.csv") != "":
         args_object.text = format
-        args.format_list = format_details(format, "other_format_mapper.csv")
+        args.format_list = format_details(format, "toolkit/other_format_mapper.csv")
         metadata = others_exiftool
     else:
         generate_log(log_name_source, "Enter a proper av/image/text format to package")

@@ -133,7 +133,7 @@ def image_exiftool(args, log_name_source):
                 destination_directory = os.path.join(input_path + "_metadata_" + format[1:])
             
         os.makedirs(destination_directory, exist_ok=True)
-        format_detailed_list = format_details(format, r"image_format_mapper.csv")
+        format_detailed_list = format_details(format, r"toolkit/image_format_mapper.csv")
 
         csv_path = os.path.join(destination_directory, "exif_csv")
         txt_path = os.path.join(destination_directory, "exif_txt")
@@ -222,7 +222,7 @@ def av_mediainfo(args, log_name_source):
                 destination_directory = os.path.join(input_path + "_metadata_" + format[1:])
         
         os.makedirs(destination_directory, exist_ok=True)
-        format_detailed_list = format_details(format, r"av_format_mapper.csv")
+        format_detailed_list = format_details(format, r"toolkit/av_format_mapper.csv")
 
         csv_path = os.path.join(destination_directory, "mediainfo_csv")
         xml_path = os.path.join(destination_directory, "mediainfo_pbcore")
@@ -309,7 +309,7 @@ def others_exiftool(args, log_name_source):
                 destination_directory = os.path.join(input_path + "_metadata_" + format[1:])
             
         os.makedirs(destination_directory, exist_ok=True)
-        format_detailed_list = format_details(format, r"other_format_mapper.csv")
+        format_detailed_list = format_details(format, r"toolkit/other_format_mapper.csv")
 
         csv_path = os.path.join(destination_directory, "exif_csv")
         txt_path = os.path.join(destination_directory, "exif_txt")
