@@ -67,11 +67,13 @@ def arg_parse():
                         default="", 
                         help="Enter the additional directory/file to be copied from a different source to the destination")
     
-    parser.add_argument('-jhove',
-                        choices=['y', 'n'],
-                        type=str,
-                        default='', 
-                        help="Enter your choice on using 'jhove' utility IF available")
+    parser.add_argument('--no-jhove',
+                        action='store_false',
+                        dest='jhove',
+                        help="Disable JHOVE audit (enabled by default)")
+    
+    # Set JHove to run as default explicitly
+    parser.set_defaults(jhove=True)
 
     parser.add_argument('-brunnhilde',
                         choices=['y', 'n'],
@@ -379,26 +381,62 @@ def others_exiftool(args, log_name_source):
 # Below function triggers jhove auditing process for all the files stored
 # in the "objects" folder and stores the results in the "metadata" folder.
 def jhove_audit(args, log_name_source):
-    
+    """    Run JHOVE audit over the input directory if JHOVE is available.    """
+
+
+    print(' - JHOVE enabled - Beginning auditing')
+    generate_log(log_name_source, ' - JHOVE enabled - Beginning auditing')
+
+    # Possible JHOVE binary locations (expandable later)
+    candidate_bins = [
+        os.path.expanduser("~/jhove/jhove"),
+        shutil.which("jhove")
+    ]
+
+    # Resolve the JHOVE binary path
+    jhove_bin = next((b for b in candidate_bins if b and os.path.isfile(b)), None)
+
+    if not jhove_bin:
+        msg = '- JHOVE enabled but not found in system PATH or expected location - skipping JHOVE auditing'
+        print(msg)
+        generate_log(log_name_source, msg)
+        return
+
     input_path = args.i
-    output_path = args.o
 
-    print(' - JHOVE available/enabled - Beginning auditing')
-    generate_log(log_name_source, ' - JHOVE available/enabled - Beginning auditing')
-
+    # Decide output location
     if args.o:
-        jhove_xml_file = os.path.join(output_path, os.path.basename(input_path) + "_jhove_audit.xml")
+        jhove_xml_file = os.path.join(
+            args.o, 
+            os.path.basename(input_path) + "_jhove_audit.xml")
     else:
         jhove_xml_file = input_path + "_jhove_audit.xml"
-    
-    command = f"""\
-    {os.path.expanduser("~/")}jhove/jhove -h Audit -o "{jhove_xml_file}" "{input_path}"
-    """
-    subprocess.run(command, shell=True, text=True)
 
-    print(' - JHOVE available/enabled - auditing process completed')
-    generate_log(log_name_source, ' - JHOVE available/enabled - auditing process completed')
-    return
+    # Build command safely (no shell=True)
+    pcommand = [
+        jhove_bin,
+        "-h", "Audit",
+        "-o", jhove_xml_file,
+        input_path
+    ]
+
+    print("Running JHOVE command: " + " ".join(pcommand))
+    generate_log(log_name_source,
+    "Running JHOVE command: " + " ".join(pcommand))
+
+    result = subprocess.run(pcommand, capture_output=True, text=True)
+    if result.returncode != 0:
+        msg = (
+            f' - JHOVE auditing failed with exit code {result.returncode}'
+        
+            '- some files may be unsupported or invalid'
+        )
+        print(msg)
+        generate_log(log_name_source, msg)
+        return
+    
+    print(' - JHOVE audit completed successfully')  
+    generate_log(log_name_source, ' - JHOVE audit completed successfully')
 
 # Below function performs the brunnhilde/ClamAv virus scanning of the "objects" folder
 # content and stores the results in the "metadata" folder.
@@ -454,15 +492,36 @@ def main():
             generate_log(log_name_source, ' - At least once format must be provided as input')
             sys.exit()    
     
-    if args.jhove == "":
-        q = input("Would you like to generate a jhove audit report? (Ensure jhove installed in this system. \
-                  Provide y/n as your input)")
-        if q.lower() == 'y':
-            args.jhove = 'y'
-            generate_log(log_name_source, f"Enabling jhove audit report")
-        else:
-            args.jhove = 'n'
-            generate_log(log_name_source, "Ignoring jhove auditing")
+    selected_formats = set()
+
+    if args.img:
+        selected_formats.update(args.img.split(" "))
+
+    if args.av:
+        selected_formats.update(args.av.split(" "))
+
+    if args.text:
+        selected_formats.update(args.text.split(" "))
+    
+   # Formats that JHOVE can audit properly based on the JHOVE documentation: https://jhove.openpreservation.org/documentation/
+    JHOVE_FORMATS = {'.aiff', '.ascii', '.gif', '.html', '.tif', '.tiff', '.jpg', '.jpeg', '.jp2', '.pdf', '.wav', '.wave', '.xml'}
+
+    if args.jhove and selected_formats & JHOVE_FORMATS:
+        jhove_audit(args, log_name_source)
+        jhove_ran = True
+
+    elif args.jhove:
+        jhove_skipped_unsupported = True
+        msg = (
+            "- JHOVE enabled but no supported formats selected for auditing. JHOVE will be skipped."
+        )   
+        print(msg)
+        generate_log(log_name_source, msg)
+
+    else:
+        msg = "- JHOVE auditing disabled by user choice - skipping JHOVE auditing"
+        print(msg)
+        generate_log(log_name_source, msg)
 
     if args.brunnhilde == "":
         q = input("Would you like to generate a siegfried-brunnhilde virus report? (Ensure \
