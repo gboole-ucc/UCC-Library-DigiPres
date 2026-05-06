@@ -26,6 +26,45 @@ def collect_files(
             files.append(os.path.join(root, filename))
     return files
 
+# allows chice between directories or individual files for input
+
+def resolve_input_files(
+    input_dir: str | None = None,
+    input_files: list[str] | None = None,
+    extensions: list[str] | None = None,
+) -> list"""
+    Returns a concrete list of files to process, based on either:
+    - a directory (walked recursively), or
+    - an explicit list of files.
+
+    Exactly one of input_dir or input_files must be provided.
+    """
+
+    if input_dir and input_files:
+        raise ValueError("Provide either input_dir or input_files, not both")
+
+    if not input_dir and not input_files:
+        raise ValueError("Either input_dir or input_files must be provided")
+
+    # Case 1: explicit files
+    if input_files:
+        files: list[str] = []
+        for f in input_files:
+            if not os.path.isfile(f):
+                raise FileNotFoundError(f"Input file does not exist: {f}")
+            if extensions:
+                if not f.lower().endswith(tuple(extensions)):
+                    continue
+            files.append(os.path.abspath(f))
+        return files
+
+    # Case 2: directory walk
+    return collect_files(
+        root_dir=input_dir,
+        extensions=extensions,
+        ignore_hidden=True,
+    )
+
 def normalise_path(path: str, base_dir: str) -> str:
     '''
     Returns a normalised path relative to the base directory.
