@@ -120,6 +120,9 @@
 	<!-- Set maximum time to live in seconds or mnemonics, e.g. "2 minutes". When
 	       this limit is exceeded, an exception is thrown and processing stops. -->
 	<policy domain="resource" name="time" value="60"/>      <!-- Kills processes taking over 60 seconds -->
+		
+	<!-- option to create a specific temporary path (private folder) for temp files to prevent cluttering system space
+	<policy domain="resource" name="temporary-path" value="/Users/yourname/MagickWork/tmp"/> -->
 	
 	
 	<!-- 2. GLOBAL DENY -->
@@ -141,6 +144,16 @@
 	
 
 	<!-- 3. PATH & STREAM PROTECTION -->
+
+	<!--option  to set only specific paths that can be used by imagemagick-->
+	<!-- A. DENY ALL PATHS FIRST
+	<policy domain="path" rights="none" pattern="*" />
+
+	B. ALLOW ONLY SPECIFIC WORK FOLDERS 
+	Replace /Users/yourname/MagickWork/* with your actual path
+	<policy domain="path" rights="read|write" pattern="/Users/yourname/MagickWork/*" />
+	<policy domain="path" rights="read" pattern="/Volumes/YourDASName/*" /> -->
+
 	<!-- don't read sensitive paths. -->
 	<!-- Block access to Mac config files. -->
     <policy domain="path" rights="none" pattern="@*"/> 				<!-- blocks indirect file reads -->
