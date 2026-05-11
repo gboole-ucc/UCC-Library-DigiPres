@@ -11,25 +11,23 @@ SUFFIX = "_web_image"
 
 def show_help():
     """
-    Display help text matching the original Bash script.
+    Display help text.
     """
     print(
-        "Usage: python3 image_convert.py -i <input_dir> -o <output_dir> "
-        "-if <jpg|tiff|dng> -of <jpg|tiff|png>\n\n"
+        "Usage: python3 convert_image.py -i <input_dir> -o <output_dir> "
+        "-if <jpg|jpeg|png|tif|tiff|dng> -of <jpg|jpeg|png|tiff>\n\n"
         "Arguments:\n"
         "  -i    Path to the source folder containing images.\n"
-        "  -o    Path to the destination folder for resized images.\n"
-        "  -if   Input format to look for (jpg, tiff, or dng).\n"
-        "  -of   Output format for the saved files (jpg, tiff, or png).\n"
-        "  -h    Display this help message.\n\n"
-        "Example:\n"
-        "  python3 image_convert.py -i ./raw_photos -o ./processed -if dng -of jpg"
+        "  -o    Path to the destination folder for converted images.\n"
+        "  -if   Input format to look for (jpg/jpeg, png, tif/tiff, or dng).\n"
+        "  -of   Output format for the saved files (jpg/jpeg, png, or tiff).\n"
+        "  -h    Display this help message.\n"
     )
 
 
 def parse_arguments():
     """
-    Parse command-line arguments using argparse.
+    Parse and normalise command-line arguments.
     """
     parser = argparse.ArgumentParser(add_help=False)
 
@@ -45,22 +43,62 @@ def parse_arguments():
         show_help()
         sys.exit(0)
 
-    # Validate required arguments
     if not all([args.input_dir, args.output_dir, args.input_format, args.output_format]):
         print("Error: Missing required arguments.\n")
         show_help()
         sys.exit(1)
 
-    # Normalise formats (remove leading dots, force lowercase)
     args.input_format = args.input_format.lstrip(".").lower()
     args.output_format = args.output_format.lstrip(".").lower()
 
     return args
 
 
-def run_ffmpeg(input_file: Path, output_file: Path):
+def accepted_suffixes(input_format: str):
     """
-    Run FFmpeg with high-integrity image settings.
+    Return accepted suffixes for a logical input format.
+    Matching is case-insensitive because suffix.lower() is used.
+    """
+
+    if input_format in {"tif", "tiff"}:
+        return {".tif", ".tiff"}
+
+    if input_format in {"jpg", "jpeg"}:
+        return {".jpg", ".jpeg"}
+
+    if input_format == "png":
+        return {".png"}
+
+    return {f".{input_format}"}
+
+
+def ffmpeg_output_options(output_format: str):
+    """
+    Return format-specific, maximum-quality FFmpeg options.
+    """
+
+    if output_format in {"jpg", "jpeg"}:
+        return [
+            "-q:v", "1",              # Highest JPEG quality
+            "-pix_fmt", "yuv444p",    # No chroma subsampling (4:4:4)
+        ]
+
+    if output_format == "png":
+        return [
+            "-compression_level", "9" # Lossless
+        ]
+
+    if output_format in {"tif", "tiff"}:
+        return [
+            "-compression", "lzw"     # Lossless TIFF compression
+        ]
+
+    return []
+
+
+def run_ffmpeg(input_file: Path, output_file: Path, output_format: str):
+    """
+    Convert image while preserving maximum fidelity.
     """
 
     ffmpeg_command = [
@@ -68,19 +106,16 @@ def run_ffmpeg(input_file: Path, output_file: Path):
         "-hide_banner",
         "-loglevel", "error",
         "-y",
+
         "-i", str(input_file),
 
-        # Preserve metadata where possible
+        # Preserve metadata
         "-map_metadata", "0",
-
-        # High-quality scaling using Lanczos
-        "-vf", "scale=iw/1.5:ih/1.5:flags=lanczos",
-
-        # Conservative, high-quality defaults
-        "-pix_fmt", "rgb24",
-
-        str(output_file)
+        "-map_metadata:s:v", "0:s:v",
     ]
+
+    ffmpeg_command.extend(ffmpeg_output_options(output_format))
+    ffmpeg_command.append(str(output_file))
 
     subprocess.run(ffmpeg_command, check=True)
 
@@ -91,44 +126,48 @@ def main():
     input_dir = Path(args.input_dir)
     output_dir = Path(args.output_dir)
 
-    # Create output directory (fail fast if it cannot be created)
+    if not input_dir.exists():
+        print(f"Error: Input directory does not exist: {input_dir}")
+        sys.exit(1)
+
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except Exception as exc:
         print(f"Error: Failed to create output directory: {exc}")
         sys.exit(1)
 
+    valid_suffixes = accepted_suffixes(args.input_format)
+
     print("--- Starting Processing ---")
     print(f"Input Dir:    {input_dir}")
     print(f"Output Dir:   {output_dir}")
     print(f"Input Type:   {args.input_format}")
     print(f"Output Type:  {args.output_format}")
+    print(f"Accepting:    {', '.join(sorted(valid_suffixes))}")
 
-    # Case-insensitive glob for input files
     files = sorted(
         f for f in input_dir.iterdir()
-        if f.is_file() and f.suffix.lower() == f".{args.input_format}"
+        if f.is_file() and f.suffix.lower() in valid_suffixes
     )
 
     if not files:
         print("No matching files found.")
         sys.exit(0)
 
+    print(f"Files found:  {len(files)}")
+
     for input_file in files:
-        base_name = input_file.stem
-        output_file = output_dir / f"{base_name}{SUFFIX}.{args.output_format}"
+        output_file = output_dir / f"{input_file.stem}{SUFFIX}.{args.output_format}"
 
         print(f"Processing: {input_file.name} -> {output_file.name}")
 
         try:
-            run_ffmpeg(input_file, output_file)
+            run_ffmpeg(input_file, output_file, args.output_format)
         except subprocess.CalledProcessError:
             print(f"Error processing file: {input_file.name}")
 
-    print(f"Process complete. Your files can be found in: {output_dir}")
+    print(f"Process complete. Files written to: {output_dir}")
 
 
 if __name__ == "__main__":
     main()
-
-
