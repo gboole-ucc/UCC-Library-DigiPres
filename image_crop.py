@@ -2,8 +2,8 @@
 """
 image_crop.py
 
-Crop images horizontally using ffmpeg.
-- Crops from the LEFT or RIGHT side
+Crop images using ffmpeg.
+- Crops from LEFT, RIGHT, TOP, or BOTTOM
 - Crop amount is specified in pixels
 - Works on a single file or a directory (batch processing)
 - Output directory is created if it does not exist
@@ -27,31 +27,39 @@ HELPER_TEXT = """
 EXTENDED HELPER
 ---------------
 
-This script crops images horizontally using ffmpeg.
+This script crops images using ffmpeg.
 
 BASIC BEHAVIOUR
-- Width only is changed
-- Height is preserved
+- Crop amount is specified in pixels
 - Aspect ratio is NOT preserved
-- Crop can occur from left or right
+- Cropping can be horizontal or vertical
+
+CROP DIRECTIONS
+- left   : removes pixels from the left edge
+- right  : removes pixels from the right edge
+- top    : removes pixels from the top edge
+- bottom : removes pixels from the bottom edge
 
 ARGUMENTS
 - -i  Input file or directory
 - -o  Output file or directory
-- -s  Side to crop from: left | right
+- -s  Side to crop from: left | right | top | bottom
 - -c  Pixels to remove
-- -w  Optional original width (skips ffprobe)
+- --orig-size  Optional original image size as HEIGHTxWIDTH (skips ffprobe)
 
 EXAMPLES
 
-Single image, crop 200px from the right:
+Crop 200px from the right:
 python image_crop.py -i image.tif -o out.tif -s right -c 200
 
-Batch crop directory from the left:
-python image_crop.py -i scans_in -o scans_out -s left -c 300
+Crop 300px from the top:
+python image_crop.py -i image.tif -o out.tif -s top -c 300
 
-Manual width override:
-python image_crop.py -i img.jpg -o out.jpg -s right -c 150 -w 4000
+Batch crop from the bottom:
+python image_crop.py -i scans_in -o scans_out -s bottom -c 150
+
+Manual size override:
+python image_crop.py -i img.jpg -o out.jpg -s top -c 300 --orig-size 6000x4000
 """
 
 
@@ -61,7 +69,7 @@ python image_crop.py -i img.jpg -o out.jpg -s right -c 150 -w 4000
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Crop images horizontally using ffmpeg."
+        description="Crop images using ffmpeg."
     )
 
     parser.add_argument(
@@ -79,7 +87,7 @@ def parse_args():
     parser.add_argument(
         "-s",
         dest="side",
-        choices=["left", "right"],
+        choices=["left", "right", "top", "bottom"],
         help="Side of the image to crop from"
     )
 
@@ -91,10 +99,9 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-w",
-        dest="orig_width",
-        type=int,
-        help="Optional original image width in pixels"
+        "--orig-size",
+        dest="orig_size",
+        help="Optional original image size as HEIGHTxWIDTH (e.g. 6000x4000)"
     )
 
     parser.add_argument(
@@ -125,20 +132,37 @@ def parse_args():
     if missing:
         parser.error(f"Missing required arguments: {', '.join(missing)}")
 
+    # Parse --orig-size
+    args.orig_height = None
+    args.orig_width = None
+
+    if args.orig_size:
+        try:
+            height_str, width_str = args.orig_size.lower().split("x")
+            args.orig_height = int(height_str)
+            args.orig_width = int(width_str)
+        except ValueError:
+            parser.error(
+                "--orig-size must be in the format HEIGHTxWIDTH (e.g. 6000x4000)"
+            )
+
     return args
 
 
 # -----------------------------------
-# Get image width using ffprobe
+# ffprobe helper
 # -----------------------------------
 
-def get_image_width(image_path):
+def get_image_dimensions(image_path):
+    """
+    Uses ffprobe to return (width, height) of an image.
+    """
     cmd = [
         "ffprobe",
         "-v", "error",
         "-select_streams", "v:0",
-        "-show_entries", "stream=width",
-        "-of", "csv=p=0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0:s=x",
         str(image_path)
     ]
 
@@ -149,33 +173,56 @@ def get_image_width(image_path):
         check=True
     )
 
-    return int(result.stdout.strip())
+    width, height = result.stdout.strip().split("x")
+    return int(width), int(height)
 
 
 # -----------------------------------
 # Build ffmpeg crop filter
 # -----------------------------------
 
-def build_crop_filter(orig_width, crop_px, side):
-    new_width = orig_width - crop_px
+def build_crop_filter(orig_width, orig_height, crop_px, side):
+    """
+    Returns an ffmpeg crop filter string based on crop direction.
+    """
 
-    if new_width <= 0:
-        raise ValueError("Crop size is larger than or equal to image width")
+    # Horizontal crops
+    if side in ("left", "right"):
+        new_width = orig_width - crop_px
+        if new_width <= 0:
+            raise ValueError("Crop size is larger than or equal to image width")
 
-    x_offset = crop_px if side == "left" else 0
+        x_offset = crop_px if side == "left" else 0
+        return f"crop={new_width}:ih:{x_offset}:0"
 
-    return f"crop={new_width}:ih:{x_offset}:0"
+    # Vertical crops
+    else:
+        new_height = orig_height - crop_px
+        if new_height <= 0:
+            raise ValueError("Crop size is larger than or equal to image height")
+
+        y_offset = crop_px if side == "top" else 0
+        return f"crop=iw:{new_height}:0:{y_offset}"
 
 
 # -----------------------------------
 # Crop a single image
 # -----------------------------------
 
-def crop_image(input_path, output_path, side, crop_px, orig_width=None):
-    if orig_width is None:
-        orig_width = get_image_width(input_path)
+def crop_image(input_path, output_path, side, crop_px,
+               orig_width=None, orig_height=None):
 
-    crop_filter = build_crop_filter(orig_width, crop_px, side)
+    if orig_width is None or orig_height is None:
+        detected_width, detected_height = get_image_dimensions(input_path)
+        orig_width = orig_width or detected_width
+        orig_height = orig_height or detected_height
+
+    crop_filter = build_crop_filter(
+        orig_width,
+        orig_height,
+        crop_px,
+        side
+    )
 
     cmd = [
         "ffmpeg",
@@ -209,7 +256,8 @@ def main():
                     output_path / file.name,
                     args.side,
                     args.crop_px,
-                    args.orig_width
+                    args.orig_width,
+                    args.orig_height
                 )
 
     # Single file
@@ -226,9 +274,14 @@ def main():
             out_file,
             args.side,
             args.crop_px,
-            args.orig_width
+            args.orig_width,
+            args.orig_height
         )
 
+
+# -----------------------------------
+# Entry point
+# -----------------------------------
 
 if __name__ == "__main__":
     main()
