@@ -12,6 +12,32 @@ from manifest import create_manifest_for_directory
 from validate import validate_objects_against_manifest
 
 
+# ----------------------------------------------------------------------
+# NEW: helper function to create IP-level sidecar manifest
+# ----------------------------------------------------------------------
+def create_ip_sidecar_manifest(uid_path, output_root, uid, log_name_source):
+    """
+    Create a SHA-512 manifest for the entire IP (UID folder).
+    The manifest is written as a sidecar alongside the UID folder.
+    """
+
+    manifest_path = os.path.join(
+        output_root,
+        f"{uid}_package_manifest.md5"
+    )
+
+    create_manifest_for_directory(
+        source_dir=uid_path,
+        manifest_path=manifest_path,
+        use_sha512=False
+    )
+
+    generate_log(
+        log_name_source,
+        f"IP-level sidecar manifest created at {manifest_path}"
+    )
+
+
 # Empty class to create custom objects. Useful to modify argument lists.
 class Arguments():
     pass
@@ -180,6 +206,7 @@ def objects_and_supplements_ip(args, log_name_source):
     generate_log(log_name_source, f"Finished processing object and supplementary files for {args.format} files")
     return
 
+
 # Below function checks if the user entered "uid" names adheres to 
 # a specfic condition.
 def uid_pattern_check(uid):
@@ -192,6 +219,7 @@ def uid_pattern_check(uid):
         m = uid_pattern.fullmatch(uid)
 
     return uid
+
 
 # Below function triggers jhove auditing process for all the files stored
 # in the "objects" folder and stores the results in the "metadata" folder.
@@ -235,7 +263,6 @@ def jhove_audit(args, log_name_source):
     
     print(' - JHOVE auditing completed successfully')
     generate_log(log_name_source, ' - JHOVE auditing completed successfully')
-
 
 
 def run_freshclam(log_name_source):
@@ -285,7 +312,8 @@ def run_freshclam(log_name_source):
         )
         print(msg)
         generate_log(log_name_source, msg)
-                         
+
+
 # Below function performs the brunnhilde/ClamAv virus scanning of the "objects" folder
 # content and stores the results in the "metadata" folder.
 def brunnhilde_scan(args, log_name_source):
@@ -336,7 +364,7 @@ def brunnhilde_scan(args, log_name_source):
     if os.path.exists(report_file):
         os.rename(
             report_file, 
-                  os.path.join(brunnhilde_output_folder, args.uid+"_report.html"))
+            os.path.join(brunnhilde_output_folder, args.uid+"_report.html"))
     
     siegfried_file = os.path.join(brunnhilde_output_folder, "siegfried.csv")
     if os.path.exists(siegfried_file):
@@ -363,7 +391,8 @@ def brunnhilde_scan(args, log_name_source):
             log_name_source,
             "Brunnhilde ran with --noclam option, so no viruscheck log generated"
             )
-    
+
+
 # Below function is the main logic to setup all the required folders for 
 # "information package" creation. It also ensures all required arguments
 # are entered properly by the user.
@@ -422,23 +451,6 @@ def main():
 
     args_object = Arguments()
 
-    # format = args.format
-    # ret = format_details(format, "toolkit/image_format_mapper.csv")
-    # if ret == "":
-    #     ret = format_details(format, "toolkit/av_format_mapper.csv")
-    #     if ret == "":
-    #         generate_log(log_name_source, "Enter a proper av or image format to package")
-    #         print("Enter a proper image or av format to package")
-    #         sys.exit()
-    #     else:
-    #         args_object.av = format
-    #         args.format_list = ret
-    #         metadata = av_mediainfo
-    # else:
-    #     args_object.img = format
-    #     args.format_list = ret
-    #     metadata = image_exiftool
-
     format = args.format
     if format_details(format, "toolkit/image_format_mapper.csv") != "":
         args_object.img = format
@@ -456,7 +468,6 @@ def main():
         generate_log(log_name_source, "Enter a proper av/image/text format to package")
         print("Enter a proper image/av/text format to package")
         sys.exit()
-
 
     args_object.i = input_path
     args_object.dest = output_path
@@ -586,11 +597,20 @@ def main():
         )
         print(msg)
         generate_log(log_name_source, msg)
+
+    # ------------------------------------------------------------------
+    # NEW: create IP-level sidecar manifest (entire UID package)
+    # ------------------------------------------------------------------
+    create_ip_sidecar_manifest(
+        uid_path=output_path,
+        output_root=output_path_,
+        uid=uid,
+        log_name_source=log_name_source
+    )
       
     return
+
 
 # Below code marks the start of execution of the program.
 if __name__ == "__main__":
     main()
-
-    
