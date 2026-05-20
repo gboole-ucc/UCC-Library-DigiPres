@@ -174,10 +174,6 @@ def objects_and_supplements_ip(args, log_name_source):
                         generate_log(log_name_source, msg)
                         continue
 
-                    new_file_name = os.path.basename(root) + "_" + file
-                    file_dest = os.path.join(objects_folder, new_file_name)
-                    os.rename(os.path.join(objects_folder, file), file_dest)
-
                 else:
                     relative_path = os.path.relpath(root, os.path.dirname(input_path))
                     dest_dir = os.path.join(objects_folder, relative_path)
@@ -198,9 +194,6 @@ def objects_and_supplements_ip(args, log_name_source):
 
                 shutil.copy2(file_src, supplement_folder)
 
-                new_file_name = os.path.basename(root) + "_" + file
-                file_dest = os.path.join(supplement_folder, new_file_name)
-                os.rename(os.path.join(supplement_folder, file), file_dest)
             
     print(f"Finished processing object and supplementary files for {args.format} files")
     generate_log(log_name_source, f"Finished processing object and supplementary files for {args.format} files")
