@@ -23,7 +23,7 @@ def create_ip_sidecar_manifest(uid_path, output_root, uid, log_name_source):
 
     manifest_path = os.path.join(
         output_root,
-        f"{uid}_package_manifest.md5"
+        f"{uid}_manifest.md5"
     )
 
     create_manifest_for_directory(
