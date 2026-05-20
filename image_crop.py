@@ -47,6 +47,10 @@ ARGUMENTS
 - -c  Pixels to remove
 - --orig-size  Optional original image size as HEIGHTxWIDTH (skips ffprobe)
 
+CROP ALL SIDES AT ONCE
+- Use --all LEFT,RIGHT,TOP,BOTTOM
+- Values are pixels- --all cannot be used with -s or -c
+
 EXAMPLES
 
 Crop 200px from the right:
@@ -55,13 +59,15 @@ python image_crop.py -i image.tif -o out.tif -s right -c 200
 Crop 300px from the top:
 python image_crop.py -i image.tif -o out.tif -s top -c 300
 
+Crop 100px left/right and 200px top/bottom:
+python image_crop.py -i image.tif -o out.tif --all 100,100,200,200
+
 Batch crop from the bottom:
 python image_crop.py -i scans_in -o scans_out -s bottom -c 150
 
 Manual size override:
 python image_crop.py -i img.jpg -o out.jpg -s top -c 300 --orig-size 6000x4000
 """
-
 
 # -------------------------
 # Argument parsing
@@ -99,6 +105,12 @@ def parse_args():
     )
 
     parser.add_argument(
+    "--all",
+    dest="crop_all",
+    help="Crop all sides at once as LEFT,RIGHT,TOP,BOTTOM (pixels)"
+    )
+    
+    parser.add_argument(
         "--orig-size",
         dest="orig_size",
         help="Optional original image size as HEIGHTxWIDTH (e.g. 6000x4000)"
@@ -124,10 +136,11 @@ def parse_args():
         missing.append("-i")
     if not args.output:
         missing.append("-o")
-    if not args.side:
-        missing.append("-s")
-    if args.crop_px is None:
-        missing.append("-c")
+    if not args.crop_all:
+        if not args.side:
+            missing.append("-s")
+        if args.crop_px is None:
+            missing.append("-c")
 
     if missing:
         parser.error(f"Missing required arguments: {', '.join(missing)}")
@@ -144,6 +157,26 @@ def parse_args():
         except ValueError:
             parser.error(
                 "--orig-size must be in the format HEIGHTxWIDTH (e.g. 6000x4000)"
+            )
+
+    # --all validation
+    if args.crop_all:
+        if args.side or args.crop_px is not None:
+            parser.error("--all cannot be used with -s or -c")
+
+    args.crop_left = args.crop_right = None
+    args.crop_top = args.crop_bottom = None
+
+    if args.crop_all:
+        try:
+            left, right, top, bottom = args.crop_all.split(",")
+            args.crop_left = int(left)
+            args.crop_right = int(right)
+            args.crop_top = int(top)
+            args.crop_bottom = int(bottom)
+        except ValueError:
+            parser.error(
+                "--all must be in the format LEFT,RIGHT,TOP,BOTTOM (pixels)"
             )
 
     return args
@@ -209,21 +242,32 @@ def build_crop_filter(orig_width, orig_height, crop_px, side):
 # Crop a single image
 # -----------------------------------
 
-def crop_image(input_path, output_path, side, crop_px,
-               orig_width=None, orig_height=None):
+def crop_image(input_path, output_path,
+               side=None, crop_px=None,
+               orig_width=None, orig_height=None,
+               crop_all=None):
 
     if orig_width is None or orig_height is None:
         detected_width, detected_height = get_image_dimensions(input_path)
         orig_width = orig_width or detected_width
         orig_height = orig_height or detected_height
 
-    crop_filter = build_crop_filter(
-        orig_width,
-        orig_height,
-        crop_px,
-        side
-    )
-
+    if crop_all:
+        crop_filter = build_crop_filter_all(
+            orig_width,
+            orig_height,
+            crop_all["left"],
+            crop_all["right"],
+            crop_all["top"],
+            crop_all["bottom"]
+        )
+    else:
+        crop_filter = build_crop_filter(
+            orig_width,
+            orig_height,
+            crop_px,
+            side
+        )
     cmd = [
         "ffmpeg",
         "-y",
@@ -234,6 +278,28 @@ def crop_image(input_path, output_path, side, crop_px,
 
     subprocess.run(cmd, check=True)
 
+ # -----------------------------------
+# Crop all sides at once
+# -----------------------------------   
+
+def build_crop_filter_all(orig_width, orig_height,
+                          crop_left, crop_right,
+                          crop_top, crop_bottom):
+    """
+    Build ffmpeg crop filter for cropping all sides at once.
+    """
+
+    new_width = orig_width - crop_left - crop_right
+    new_height = orig_height - crop_top - crop_bottom
+
+    if new_width <= 0 or new_height <= 0:
+        raise ValueError("Combined crop is larger than image dimensions")
+
+    x_offset = crop_left
+    y_offset = crop_top
+
+    return f"crop={new_width}:{new_height}:{x_offset}:{y_offset}"
+
 
 # -----------------------------------
 # Main logic
@@ -241,6 +307,15 @@ def crop_image(input_path, output_path, side, crop_px,
 
 def main():
     args = parse_args()
+
+    crop_all = None
+    if args.crop_all:
+        crop_all = {
+            "left": args.crop_left,
+            "right": args.crop_right,
+            "top": args.crop_top,
+            "bottom": args.crop_bottom,
+        }
 
     input_path = Path(args.input)
     output_path = Path(args.output)
@@ -257,7 +332,8 @@ def main():
                     args.side,
                     args.crop_px,
                     args.orig_width,
-                    args.orig_height
+                    args.orig_height,
+                    crop_all
                 )
 
     # Single file
@@ -275,7 +351,8 @@ def main():
             args.side,
             args.crop_px,
             args.orig_width,
-            args.orig_height
+            args.orig_height,
+            crop_all
         )
 
 
