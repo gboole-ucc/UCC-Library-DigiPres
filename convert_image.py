@@ -157,7 +157,8 @@ def main():
     print(f"Files found:  {len(files)}")
 
     for input_file in files:
-        output_file = output_dir / f"{input_file.stem}{SUFFIX}.{args.output_format}"
+        suffix = "_access" if args.output_format in {"jpg", "jpeg"} else ""
+        output_file = output_dir / f"{input_file.stem}{suffix}.{args.output_format}"
 
         print(f"Processing: {input_file.name} -> {output_file.name}")
 

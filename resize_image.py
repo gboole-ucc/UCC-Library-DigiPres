@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 
-SUFFIX = "_web_image"
-DEFAULT_LONG_EDGE = 1600  # pixels
+SUFFIX = "_web"
+DEFAULT_LONG_EDGE = 2000  # pixels
 
 
 def show_help():
@@ -21,7 +21,7 @@ def show_help():
         "  -i     Path to the source folder containing images.\n"
         "  -o     Path to the destination folder for resized images.\n"
         "  -if    Input format to look for (jpg/jpeg, png, tif/tiff, or dng).\n"
-        "  -le    Long edge size in pixels (default: 1600).\n"
+        "  -le    Long edge size in pixels (default: 2000).\n"
         "  -h     Display this help message.\n"
     )
 
