@@ -127,3 +127,158 @@ def format_details (format_name: str, csv_filename: str) -> list[str] | str:
     )
     
     return extensions
+
+# ----------------Format mapper helpers----------------
+# These functions are used to load format mappers and infer logical formats
+# these functions not in use yet. needs testing and refinement.
+
+def load_format_mappers(csv_paths: list[str]) -> dict[str, str]:
+    '''
+    Loads one or more format-mapper CSVs and returns a mapping of
+    file extension -> logical format name.
+
+    Parameters
+    ----------
+    csv_paths : list[str]
+        Paths to format mapper CSV files.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping of extension ('.tif', '.iiq', etc.) to format name.
+    '''
+
+    extension_map: dict[str, str] = {}
+
+    for csv_path in csv_paths:
+        df = pd.read_csv(csv_path, header=0, index_col='format')
+
+        for format_name, row in df.iterrows():
+            extensions = (
+                row
+                .dropna()
+                .astype(str)
+                .str.lower()
+                .tolist()
+            )
+
+            for ext in extensions:
+                extension_map[ext] = format_name
+
+    return extension_map
+
+
+def infer_logical_format(
+    csv_path: str,
+    extension_map: dict[str, str]
+) -> str:
+    '''
+    Infers the logical format of a metadata CSV using the SourceFile
+    field inside the CSV.
+
+    Parameters
+    ----------
+    csv_path : str
+        Path to a metadata CSV file.
+    extension_map : dict[str, str]
+        Mapping of extension to logical format.
+
+    Returns
+    -------
+    str
+        Logical format name, or 'unknown'.
+    '''
+
+    try:
+        df = pd.read_csv(csv_path, usecols=['SourceFile'])
+    except ValueError:
+        return 'unknown'
+
+    if df.empty:
+        return 'unknown'
+
+    source_file = str(df.iloc[0]['SourceFile']).lower()
+    ext = os.path.splitext(source_file)[1]
+
+    return extension_map.get(ext, 'unknown')
+
+
+# ----------------Metadata CSV merge functions----------------
+# Merges metadata CSV files by logical format, using format mapper CSVs.
+# these functions not in use yet. needs testing and refinement.
+
+def merge_metadata_csvs_by_format(
+    csv_files: list[str],
+    image_mapper_csv: str,
+    other_mapper_csv: str,
+    output_dir: str,
+) -> dict[str, pd.DataFrame]:
+    '''
+    Merges metadata CSV files by logical format, using format
+    mapper CSVs. IIQ formats are merged using a union-of-columns
+    strategy; all other formats are merged safely row-wise.
+
+    Parameters
+    ----------
+    csv_files : list[str]
+        Paths to metadata CSV files.
+    image_mapper_csv : str
+        Path to image_format_mapper.csv.
+    other_mapper_csv : str
+        Path to other_format_mapper.csv.
+    output_dir : str
+        Directory where merged CSVs will be written.
+
+    Returns
+    -------
+    dict[str, pd.DataFrame]
+        Mapping of logical format -> merged DataFrame.
+    '''
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    extension_map = load_format_mappers(
+        [image_mapper_csv, other_mapper_csv]
+    )
+
+    grouped: dict[str, list[str]] = {}
+
+    for csv_file in csv_files:
+        logical_format = infer_logical_format(
+            csv_file,
+            extension_map
+        )
+        grouped.setdefault(logical_format, []).append(csv_file)
+
+    merged_outputs: dict[str, pd.DataFrame] = {}
+
+    for format_name, files in grouped.items():
+        dataframes: list[pd.DataFrame] = []
+
+        for csv_file in files:
+            df = pd.read_csv(csv_file)
+            df['source_csv'] = os.path.basename(csv_file)
+            dataframes.append(df)
+
+        # IIQ requires union-of-columns merging
+        if format_name.lower() == 'iiq':
+            merged_df = pd.concat(
+                dataframes,
+                ignore_index=True,
+                sort=False
+            )
+        else:
+            merged_df = pd.concat(
+                dataframes,
+                ignore_index=True
+            )
+
+        output_path = os.path.join(
+            output_dir,
+            f'{format_name}_metadata_merged.csv'
+        )
+
+        merged_df.to_csv(output_path, index=False)
+        merged_outputs[format_name] = merged_df
+
+    return merged_outputs
