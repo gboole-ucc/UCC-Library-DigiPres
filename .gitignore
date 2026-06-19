@@ -4,7 +4,5 @@ authentication.js
 node_modules
 notes/
 **/*_todo.md 
-*.pdf
 /__pycache__
-*.docx
 /*pages.csv

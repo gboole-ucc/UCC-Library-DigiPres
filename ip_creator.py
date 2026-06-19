@@ -137,11 +137,24 @@ def objects_and_supplements_ip(args, log_name_source):
     objects_folder = args.objects_folder
     supplement_folder = args.supplement_folder
 
-    for root, _, files in os.walk(input_path):
+    for root, dirs, files in os.walk(input_path):
+        # Skip macOS system directories completely
+        dirs[:] = [
+            d for d in dirs
+            if d not in [".Spotlight-V100", ".Trashes", ".fseventsd"]
+        ]
+
         if files == () or files == []:
             continue
 
         for file in files:
+            # Skip macOS artefacts and resource forks
+            if file.startswith("._") or file == ".DS_Store":
+                generate_log(
+                    log_name_source,
+                    f"Skipping macOS artefact: {os.path.join(root, file)}"
+                )
+                continue
             file_format = (os.path.splitext(file)[1]).lower()
             if file_format in file_formats:
                 file_src = os.path.join(root, file)
