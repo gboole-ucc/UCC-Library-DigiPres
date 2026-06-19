@@ -65,7 +65,7 @@ def detect_formats(objects_dir):
 
 
 # --------------------------------------------------
-# RUN METADATA EXTRACTORS (structured folders)
+# RUN METADATA EXTRACTORS
 # --------------------------------------------------
 def run_metadata_extractors(objects_dir, sip_dir):
 
@@ -110,13 +110,40 @@ def run_metadata_extractors(objects_dir, sip_dir):
 
 
 # --------------------------------------------------
-# MERGE METADATA CSVs
+# MERGE METADATA CSVs (FIXED)
 # --------------------------------------------------
 def merge_exif_outputs(metadata_dir):
 
-    csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
+    print("Merging metadata CSVs...")
 
-    if not csv_files:
+    all_csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
+
+    valid_csvs = []
+
+    for csv_file in all_csv_files:
+
+        # Skip empty files (0-byte)
+        if os.path.getsize(csv_file) == 0:
+            print(f"Skipping empty CSV: {csv_file}")
+            continue
+
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_file)
+
+            # Skip invalid CSVs
+            if df.empty or len(df.columns) == 0:
+                print(f"Skipping invalid CSV: {csv_file}")
+                continue
+
+            valid_csvs.append(csv_file)
+
+        except Exception:
+            print(f"Skipping unreadable CSV: {csv_file}")
+            continue
+
+    if not valid_csvs:
+        print("No valid CSVs to merge.")
         return
 
     toolkit_dir = os.path.join(os.path.dirname(__file__), "toolkit")
@@ -125,11 +152,13 @@ def merge_exif_outputs(metadata_dir):
     other_mapper = os.path.join(toolkit_dir, "other_format_mapper.csv")
 
     utils.merge_metadata_csvs_by_format(
-        csv_files=csv_files,
+        csv_files=valid_csvs,
         image_mapper_csv=image_mapper,
         other_mapper_csv=other_mapper,
         output_dir=metadata_dir
     )
+
+    print("Metadata CSV merging complete.")
 
 
 # --------------------------------------------------
@@ -234,8 +263,10 @@ def main():
         os.path.join(sip_dir, "objects_manifest.md5")
     )
 
-    # Metadata
+    # Metadata extraction
     run_metadata_extractors(objects_dir, sip_dir)
+
+    # ✅ FIXED MERGE STEP
     merge_exif_outputs(metadata_dir)
 
     # Tools
@@ -249,7 +280,7 @@ def main():
         os.path.join(args.o, f"{args.uid}_sip_manifest.md5")
     )
 
-    print(f"\n SIP created successfully: {sip_dir}")
+    print(f"\n✅ SIP created successfully: {sip_dir}")
 
 
 if __name__ == "__main__":
