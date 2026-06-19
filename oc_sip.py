@@ -112,11 +112,43 @@ def run_metadata_extractors(objects_dir, sip_dir):
 # --------------------------------------------------
 # MERGE METADATA CSVs
 # --------------------------------------------------
+
 def merge_exif_outputs(metadata_dir):
 
-    csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
+    print("Merging metadata CSVs...")
 
-    if not csv_files:
+    all_csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
+
+    if not all_csv_files:
+        print("No CSV files found.")
+        return
+
+    valid_csvs = []
+
+    for csv_file in all_csv_files:
+
+        # Skip empty files
+        if os.path.getsize(csv_file) == 0:
+            print(f"Skipping empty CSV: {csv_file}")
+            continue
+
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_file)
+
+            # Skip invalid CSVs (no columns / bad structure)
+            if df.empty or len(df.columns) == 0:
+                print(f"Skipping invalid CSV: {csv_file}")
+                continue
+
+            valid_csvs.append(csv_file)
+
+        except Exception:
+            print(f"Skipping unreadable CSV: {csv_file}")
+            continue
+
+    if not valid_csvs:
+        print("No valid CSVs to merge.")
         return
 
     toolkit_dir = os.path.join(os.path.dirname(__file__), "toolkit")
@@ -124,13 +156,15 @@ def merge_exif_outputs(metadata_dir):
     image_mapper = os.path.join(toolkit_dir, "image_format_mapper.csv")
     other_mapper = os.path.join(toolkit_dir, "other_format_mapper.csv")
 
+    # USE FILTERED LIST
     utils.merge_metadata_csvs_by_format(
-        csv_files=csv_files,
+        csv_files=valid_csvs,
         image_mapper_csv=image_mapper,
         other_mapper_csv=other_mapper,
         output_dir=metadata_dir
     )
 
+    print("Metadata CSV merging complete.")
 
 # --------------------------------------------------
 # RUN BRUNNHILDE
