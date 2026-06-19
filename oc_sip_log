@@ -1,0 +1,144 @@
+2026-06-19T10:02:14 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T10:02:14 librarysystems  Beginning processing for .png format 
+2026-06-19T10:02:27 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T10:02:27 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T10:02:27 librarysystems  Exiting Processing for .png format 
+2026-06-19T10:02:27 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T10:02:27 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T10:02:27 librarysystems  Beginning processing for .wav format 
+2026-06-19T10:02:27 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T10:02:27 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T10:02:27 librarysystems  Exiting Processing for .wav format 
+2026-06-19T10:02:27 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T10:02:27 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T10:02:27 librarysystems  Beginning processing for .txt format 
+2026-06-19T10:03:13 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T10:03:14 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T10:03:14 librarysystems  Exiting Processing for .txt format 
+2026-06-19T10:03:14 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T10:30:55 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T10:30:55 librarysystems  Beginning processing for .png format 
+2026-06-19T10:31:09 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T10:31:09 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T10:31:09 librarysystems  Exiting Processing for .png format 
+2026-06-19T10:31:09 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T10:31:09 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T10:31:09 librarysystems  Beginning processing for .wav format 
+2026-06-19T10:31:09 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T10:31:09 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T10:31:09 librarysystems  Exiting Processing for .wav format 
+2026-06-19T10:31:09 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T10:31:09 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T10:31:09 librarysystems  Beginning processing for .txt format 
+2026-06-19T10:31:55 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T10:31:57 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T10:31:57 librarysystems  Exiting Processing for .txt format 
+2026-06-19T10:31:57 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T10:45:52 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T10:45:52 librarysystems  Beginning processing for .png format 
+2026-06-19T10:46:05 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T10:46:06 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T10:46:06 librarysystems  Exiting Processing for .png format 
+2026-06-19T10:46:06 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T10:46:06 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T10:46:06 librarysystems  Beginning processing for .txt format 
+2026-06-19T10:46:53 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T10:46:55 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T10:46:55 librarysystems  Exiting Processing for .txt format 
+2026-06-19T10:46:55 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T10:46:55 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T10:46:55 librarysystems  Beginning processing for .wav format 
+2026-06-19T10:46:55 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T10:46:55 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T10:46:55 librarysystems  Exiting Processing for .wav format 
+2026-06-19T10:46:55 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T10:59:53 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T10:59:53 librarysystems  Beginning processing for .png format 
+2026-06-19T11:00:06 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T11:00:06 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T11:00:06 librarysystems  Exiting Processing for .png format 
+2026-06-19T11:00:06 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T11:00:06 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T11:00:06 librarysystems  Beginning processing for .txt format 
+2026-06-19T11:00:52 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T11:00:54 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T11:00:54 librarysystems  Exiting Processing for .txt format 
+2026-06-19T11:00:54 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T11:00:54 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T11:00:54 librarysystems  Beginning processing for .wav format 
+2026-06-19T11:00:54 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T11:00:54 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T11:00:54 librarysystems  Exiting Processing for .wav format 
+2026-06-19T11:00:54 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T11:04:33 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T11:04:33 librarysystems  Beginning processing for .png format 
+2026-06-19T11:04:45 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T11:04:46 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T11:04:46 librarysystems  Exiting Processing for .png format 
+2026-06-19T11:04:46 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T11:04:46 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T11:04:46 librarysystems  Beginning processing for .txt format 
+2026-06-19T11:05:32 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T11:05:34 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T11:05:34 librarysystems  Exiting Processing for .txt format 
+2026-06-19T11:05:34 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T11:05:34 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T11:05:34 librarysystems  Beginning processing for .wav format 
+2026-06-19T11:05:34 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T11:05:34 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T11:05:34 librarysystems  Exiting Processing for .wav format 
+2026-06-19T11:05:34 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T11:09:14 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T11:09:15 librarysystems  Beginning processing for .png format 
+2026-06-19T11:09:27 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T11:09:27 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T11:09:27 librarysystems  Exiting Processing for .png format 
+2026-06-19T11:09:27 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T11:09:27 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T11:09:27 librarysystems  Beginning processing for .txt format 
+2026-06-19T11:10:13 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T11:10:15 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T11:10:15 librarysystems  Exiting Processing for .txt format 
+2026-06-19T11:10:15 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T11:10:15 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T11:10:15 librarysystems  Beginning processing for .wav format 
+2026-06-19T11:10:15 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T11:10:15 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T11:10:15 librarysystems  Exiting Processing for .wav format 
+2026-06-19T11:10:15 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T11:20:38 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T11:20:38 librarysystems  Beginning processing for .png format 
+2026-06-19T11:20:50 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T11:20:51 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T11:20:51 librarysystems  Exiting Processing for .png format 
+2026-06-19T11:20:51 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T11:20:51 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T11:20:51 librarysystems  Beginning processing for .txt format 
+2026-06-19T11:21:37 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T11:21:39 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T11:21:39 librarysystems  Exiting Processing for .txt format 
+2026-06-19T11:21:39 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T11:21:39 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T11:21:39 librarysystems  Beginning processing for .wav format 
+2026-06-19T11:21:39 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T11:21:39 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T11:21:39 librarysystems  Exiting Processing for .wav format 
+2026-06-19T11:21:39 librarysystems  Exiting Mediainfo processing of target audio/video formats 
+2026-06-19T11:28:17 librarysystems  Beginning exiftool processing of target ['.png'] image formats 
+2026-06-19T11:28:17 librarysystems  Beginning processing for .png format 
+2026-06-19T11:28:30 librarysystems - csv and txt folders are created successfully for .png format 
+2026-06-19T11:28:30 librarysystems  Merged csv files into master_csv for .png 
+2026-06-19T11:28:30 librarysystems  Exiting Processing for .png format 
+2026-06-19T11:28:30 librarysystems  Exiting exiftool processing of target image formats 
+2026-06-19T11:28:30 librarysystems  Beginning exiftool processing of target ['.txt'] text formats 
+2026-06-19T11:28:30 librarysystems  Beginning processing for .txt format 
+2026-06-19T11:29:16 librarysystems - csv and txt folders are created successfully for .txt format 
+2026-06-19T11:29:18 librarysystems  Merged csv files into master_csv for .txt 
+2026-06-19T11:29:18 librarysystems  Exiting Processing for .txt format 
+2026-06-19T11:29:18 librarysystems  Exiting exiftool processing of target text formats 
+2026-06-19T11:29:18 librarysystems  Beginning mediainfo processing of target ['.wav'] av formats 
+2026-06-19T11:29:18 librarysystems  Beginning processing for .wav format 
+2026-06-19T11:29:18 librarysystems - csv and xml folders are created successfully for .wav format 
+2026-06-19T11:29:18 librarysystems  Merged csv files into master_csv for .wav format 
+2026-06-19T11:29:18 librarysystems  Exiting Processing for .wav format 
+2026-06-19T11:29:18 librarysystems  Exiting Mediainfo processing of target audio/video formats 

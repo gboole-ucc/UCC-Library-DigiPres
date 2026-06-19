@@ -605,7 +605,7 @@ def main():
         generate_log(log_name_source, msg)
 
     # ------------------------------------------------------------------
-    # NEW: create IP-level sidecar manifest (entire UID package)
+    # Create IP-level sidecar manifest (entire UID package)
     # ------------------------------------------------------------------
     create_ip_sidecar_manifest(
         uid_path=output_path,
