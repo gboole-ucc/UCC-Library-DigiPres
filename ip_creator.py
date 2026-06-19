@@ -13,7 +13,7 @@ from validate import validate_objects_against_manifest
 
 
 # ----------------------------------------------------------------------
-# NEW: helper function to create IP-level sidecar manifest
+# Helper function to create IP-level sidecar manifest
 # ----------------------------------------------------------------------
 def create_ip_sidecar_manifest(uid_path, output_root, uid, log_name_source):
     """
@@ -433,13 +433,13 @@ def main():
     output_path = os.path.join(output_path_, uid)
 
     if os.path.exists(output_path):
-        q = input(f"Warning - {output_path} path already exists, do you want to continue with package creation with this uid? (y/n): ")
-        generate_log(log_name_source, f"Warning - {output_path} path already exists, do you want to continue with package creation with this uid? (y/n)")
-        generate_log(log_name_source, str(q))
-        if q.lower() != 'y':
-            print("ip_creator.py - Process Exiting")
-            generate_log(log_name_source, "ip_creator.py - Process Exiting")
-            sys.exit()
+        msg = (
+            f"A folder named {uid} already exists in the destination directory. "
+            "Please choose a different uid."
+        )
+        print(msg)
+        generate_log(log_name_source, msg)
+        sys.exit()
     
     if args.supplement == "":
         q = input("Would you like to preserve supplementary files of specific formats? (y/n): ")
