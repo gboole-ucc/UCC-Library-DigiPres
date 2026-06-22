@@ -131,7 +131,7 @@ The purpose of this script is to create a package wherein a specific format of i
         (Required Parameter)
 2) -o : Output (Absolute) path of the directory to create the uid package. 
         (Required Parameter)
-3) -uid : uid name to be provided in command-line or dynamically entered by user during code execution. A folder of this name is created in the output path specified by -o.
+3) -uid : uid number to be provided in command-line or dynamically entered by user during code execution. A folder of this name is created in the output path specified by -o.
         (Optional in command line argument, mandatory user input during execution)
 4) -format : The file format of interest to be packaged.
         (Required Parameter) 
@@ -236,8 +236,28 @@ python3 pdf2csv.py -i "/home/user/directory1/abc.pdf" -start 12 -end 35 -o "home
     
 #### Summary
     
-This script contains functions necessary to log all the above script runs.
+Contains functions necessary to log all the above script runs.
 
+### 7) oc_sip.py -
+
+#### Summary
+
+Generates a preservation-ready SIP (Submission Information Package) from a submitted 'Object Carrier' such as a hard drive a cd or a dvd. It packages objects (multiple formats) in one folder, creates fixity manifests, extracts technical metadata, and runs tools including Brunnhilde, ClamAV, ExifTool, MediaInfo, and JHOVE.
+
+#### Example command to execute the script in the command window
+
+```bash
+python3 oc_sip.py -i <input_directory> -o <output_directory> -uid <oc****>
+```
+
+#### Arguments accepted by this script
+
+1) -i : Input (Absolute) path of the object carrier's directory to inspect. 
+        (Required Parameter)
+2) -o : Output (Absolute) path of the directory to create the submission information package (sip). 
+        (Required Parameter)
+3) -uid : Unique Identifier (must follow pattern oc + numbers, e.g. oc1234)
+        (Required Parameter)
 
 ## Bash Scripts: 
 ### These scripts are designed to be used by external donors or depositors who wish to deliver digital objects to UCC-Library Digital Archive.
