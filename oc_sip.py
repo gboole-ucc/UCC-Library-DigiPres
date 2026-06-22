@@ -37,6 +37,47 @@ def copy_with_structure(src, objects_dir):
 
 
 # --------------------------------------------------
+# COPY MULTIPLE SUPPLEMENTS
+# --------------------------------------------------
+def copy_supplements(sup_paths, supplement_dir):
+
+    if not sup_paths:
+        return
+
+    for sup_path in sup_paths:
+
+        if not os.path.exists(sup_path):
+            print(f"Supplement path not found, skipping: {sup_path}")
+            continue
+
+        if os.path.isfile(sup_path):
+            shutil.copy2(sup_path, supplement_dir)
+            print(f"Supplement file copied: {sup_path}")
+
+        elif os.path.isdir(sup_path):
+            dest = os.path.join(supplement_dir, os.path.basename(sup_path))
+            shutil.copytree(sup_path, dest, dirs_exist_ok=True)
+            print(f"Supplement directory copied: {sup_path}")
+
+
+# --------------------------------------------------
+# MOVE MANIFEST LOGS INTO METADATA
+# --------------------------------------------------
+def move_manifest_logs(sip_dir, metadata_dir):
+
+    for file in os.listdir(sip_dir):
+
+        if file.startswith("manifest_creation") and file.endswith(".log"):
+
+            src = os.path.join(sip_dir, file)
+            dest = os.path.join(metadata_dir, file)
+
+            shutil.move(src, dest)
+
+            print(f"Moved manifest log to metadata: {file}")
+
+
+# --------------------------------------------------
 # DETECT FILE FORMATS
 # --------------------------------------------------
 def detect_formats(objects_dir):
@@ -65,7 +106,7 @@ def detect_formats(objects_dir):
 
 
 # --------------------------------------------------
-# RUN METADATA EXTRACTORS (structured folders)
+# RUN METADATA EXTRACTORS
 # --------------------------------------------------
 def run_metadata_extractors(objects_dir, sip_dir):
 
@@ -77,7 +118,6 @@ def run_metadata_extractors(objects_dir, sip_dir):
     print("Detecting file formats for metadata extraction...")
     img_formats, av_formats, other_formats = detect_formats(objects_dir)
 
-    # ---------------- EXIF ----------------
     if img_formats or other_formats:
 
         exif_root = os.path.join(metadata_root, "exif")
@@ -95,7 +135,6 @@ def run_metadata_extractors(objects_dir, sip_dir):
             args.text = " ".join(other_formats)
             others_exiftool(args, "oc_sip_log")
 
-    # ---------------- MEDIAINFO ----------------
     if av_formats:
 
         mediainfo_root = os.path.join(metadata_root, "mediainfo")
@@ -110,9 +149,8 @@ def run_metadata_extractors(objects_dir, sip_dir):
 
 
 # --------------------------------------------------
-# MERGE METADATA CSVs
+# MERGE METADATA CSVs (FIXED)
 # --------------------------------------------------
-
 def merge_exif_outputs(metadata_dir):
 
     print("Merging metadata CSVs...")
@@ -127,7 +165,6 @@ def merge_exif_outputs(metadata_dir):
 
     for csv_file in all_csv_files:
 
-        # Skip empty files
         if os.path.getsize(csv_file) == 0:
             print(f"Skipping empty CSV: {csv_file}")
             continue
@@ -136,7 +173,6 @@ def merge_exif_outputs(metadata_dir):
             import pandas as pd
             df = pd.read_csv(csv_file)
 
-            # Skip invalid CSVs (no columns / bad structure)
             if df.empty or len(df.columns) == 0:
                 print(f"Skipping invalid CSV: {csv_file}")
                 continue
@@ -156,7 +192,6 @@ def merge_exif_outputs(metadata_dir):
     image_mapper = os.path.join(toolkit_dir, "image_format_mapper.csv")
     other_mapper = os.path.join(toolkit_dir, "other_format_mapper.csv")
 
-    # USE FILTERED LIST
     utils.merge_metadata_csvs_by_format(
         csv_files=valid_csvs,
         image_mapper_csv=image_mapper,
@@ -165,6 +200,7 @@ def merge_exif_outputs(metadata_dir):
     )
 
     print("Metadata CSV merging complete.")
+
 
 # --------------------------------------------------
 # RUN BRUNNHILDE
@@ -237,9 +273,30 @@ def run_jhove(objects_dir, metadata_dir, uid):
 def main():
 
     parser = argparse.ArgumentParser(description="OC SIP creator")
-    parser.add_argument("-i", required=True)
-    parser.add_argument("-o", required=True)
-    parser.add_argument("-uid", required=True)
+
+    parser.add_argument(
+        "-i",
+        required=True,
+        help="Input (Absolute) path of the object carrier's directory to inspect."
+    )
+
+    parser.add_argument(
+        "-o", 
+        required=True,
+        help="Output (Absolute) path of the destination directory where the SIP will be created."
+    )
+    parser.add_argument(
+        "-uid",
+        required=True,
+        help="Unique Identifier (must follow pattern oc + numbers, e.g. oc1234)."
+    )
+
+    parser.add_argument(
+        "-sup",
+        nargs="+",
+        default=[],
+        help="Enter one or more additional directories/files to be copied from a different source to the destination"
+    )
 
     args = parser.parse_args()
 
@@ -249,41 +306,44 @@ def main():
 
     sip_dir = os.path.join(args.o, f"{args.uid}_sip")
 
-    # Guardrail
     if os.path.exists(sip_dir):
         print("a folder named oc**** already exists in the destination directory. please choose a different uid")
         return
 
     objects_dir = os.path.join(sip_dir, "objects")
     metadata_dir = os.path.join(sip_dir, "metadata")
+    supplement_dir = os.path.join(sip_dir, "supplement")
 
     os.makedirs(metadata_dir, exist_ok=True)
+    os.makedirs(supplement_dir, exist_ok=True)
 
-    # Copy
     copy_with_structure(args.i, objects_dir)
 
-    # Objects manifest
+    copy_supplements(args.sup, supplement_dir)
+
     create_manifest_for_directory(
         objects_dir,
         os.path.join(sip_dir, "objects_manifest.md5")
     )
 
-    # Metadata
+    move_manifest_logs(sip_dir, metadata_dir)
+
     run_metadata_extractors(objects_dir, sip_dir)
+
     merge_exif_outputs(metadata_dir)
 
-    # Tools
     run_brunnhilde(objects_dir, metadata_dir, args.uid)
     run_clamscan(objects_dir, metadata_dir)
     run_jhove(objects_dir, metadata_dir, args.uid)
 
-    # SIP sidecar manifest
     create_manifest_for_directory(
         sip_dir,
         os.path.join(args.o, f"{args.uid}_sip_manifest.md5")
     )
 
-    print(f"\n SIP created successfully: {sip_dir}")
+    move_manifest_logs(sip_dir, metadata_dir)
+
+    print(f"\nSIP created successfully: {sip_dir}")
 
 
 if __name__ == "__main__":
