@@ -13,7 +13,7 @@ from metadata_extractor import (
     av_mediainfo,
     others_exiftool
 )
-from logger import make_desktop_logs_dir, generate_log, remove_bad_files
+from logger import make_desktop_logs_dir, generate_log
 import toolkit.utils as utils
 
 
@@ -25,36 +25,25 @@ def validate_uid(uid):
 
 
 # --------------------------------------------------
-# COPY SOURCE STRUCTURE INTO OBJECTS
+# RUN COPYIT (VERIFIED COPY)
 # --------------------------------------------------
-def copy_with_structure(src, objects_dir, log_file):
+def run_copyit(source, objects_dir, log_file):
+    """
+    Uses copyit.py to copy and verify files into objects directory
+    """
 
-    dest_root = os.path.join(objects_dir, os.path.basename(src))
+    command = [
+        "python3",
+        "copyit.py",
+        source,
+        objects_dir
+    ]
 
-    for root, dirs, files in os.walk(src):
+    generate_log(log_file, f"Starting verified transfer with copyit: {source}")
 
-        dirs[:] = [
-            d for d in dirs
-            if d not in [".Spotlight-V100", ".Trashes", ".fseventsd"]
-        ]
+    subprocess.run(command)
 
-        rel_path = os.path.relpath(root, src)
-        dest_dir = os.path.join(dest_root, rel_path)
-
-        os.makedirs(dest_dir, exist_ok=True)
-
-        for file in files:
-
-            if file.startswith("._") or file == ".DS_Store":
-                continue
-
-            src_file = os.path.join(root, file)
-            dest_file = os.path.join(dest_dir, file)
-
-            try:
-                shutil.copy2(src_file, dest_file)
-            except Exception:
-                generate_log(log_file, f"Error copying file: {src_file}")
+    generate_log(log_file, "copyit transfer and verification complete")
 
 
 # --------------------------------------------------
@@ -89,7 +78,6 @@ def move_manifest_logs(sip_dir, metadata_dir):
     for file in os.listdir(sip_dir):
 
         if file.startswith("manifest_creation") and file.endswith(".log"):
-
             shutil.move(
                 os.path.join(sip_dir, file),
                 os.path.join(metadata_dir, file)
@@ -104,8 +92,10 @@ def copy_log_to_metadata(log_file, metadata_dir):
     if not os.path.exists(log_file):
         return
 
-    dest = os.path.join(metadata_dir, os.path.basename(log_file))
-    shutil.copy2(log_file, dest)
+    shutil.copy2(
+        log_file,
+        os.path.join(metadata_dir, os.path.basename(log_file))
+    )
 
 
 # --------------------------------------------------
@@ -184,9 +174,6 @@ def run_metadata_extractors(objects_dir, sip_dir, log_file):
 def merge_exif_outputs(metadata_dir, log_file):
 
     all_csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
-
-    if not all_csv_files:
-        return
 
     valid_csvs = []
 
@@ -332,27 +319,31 @@ def main():
 
     os.makedirs(metadata_dir, exist_ok=True)
     os.makedirs(supplement_dir, exist_ok=True)
+    os.makedirs(objects_dir, exist_ok=True)
 
-    copy_with_structure(args.i, objects_dir, log_file)
+    # VERIFIED COPY
+    run_copyit(args.i, objects_dir, log_file)
 
-    remove_bad_files(objects_dir, log_file)
-
+    # SUPPLEMENTS
     copy_supplements(args.sup, supplement_dir, log_file)
 
+    # OBJECTS MANIFEST
     create_manifest_for_directory(
         objects_dir,
         os.path.join(sip_dir, "objects_manifest.md5")
     )
     move_manifest_logs(sip_dir, metadata_dir)
 
+    # METADATA
     run_metadata_extractors(objects_dir, sip_dir, log_file)
-
     merge_exif_outputs(metadata_dir, log_file)
 
+    # TOOLS
     run_brunnhilde(objects_dir, metadata_dir, args.uid, log_file)
     run_clamscan(objects_dir, metadata_dir, log_file)
     run_jhove(objects_dir, metadata_dir, args.uid, log_file)
 
+    # SIP MANIFEST
     create_manifest_for_directory(
         sip_dir,
         os.path.join(args.o, f"{args.uid}_sip_manifest.md5")
@@ -361,6 +352,7 @@ def main():
 
     generate_log(log_file, "SIP creation completed successfully")
 
+    # COPY LOG INTO SIP
     copy_log_to_metadata(log_file, metadata_dir)
 
     print(f"SIP created successfully: {sip_dir}")
