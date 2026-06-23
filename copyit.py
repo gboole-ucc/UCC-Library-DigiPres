@@ -231,15 +231,34 @@ def copy_dir(
                     os.makedirs(destination + '/' + dirname)
                 cmd = [
                     'rsync', '-rtv',
-                    '--exclude=.*', '--exclude=.*/',
+                    '--exclude=.*', 
+                    '--exclude=.*/',
+                    '--exclude=.DS_Store',
+                    '--exclude=Thumbs.db',
+                    '--exclude=desktop.ini',
+                    '--exclude=Desktop.ini',
+                    '--exclude=System Volume Information',
+                    '--exclude=._*',
+                    '--exclude=*.Spotlight-V100',
+                    '--exclude=*.Trashes',
                     '--stats', '--progress',
                     source, destination + '/' + dirname
                 ]
             else:
                 cmd = [
                     'rsync', '-rtv',
-                    '--exclude=.*', '--exclude=.*/',
-                    '--stats', '--progress', source, destination
+                    '--exclude=.*', 
+                    '--exclude=.*/',
+                    '--exclude=.DS_Store',
+                    '--exclude=Thumbs.db',
+                    '--exclude=desktop.ini',
+                    '--exclude=Desktop.ini',
+                    '--exclude=System Volume Information',
+                    '--exclude=._*',
+                    '--exclude=*.Spotlight-V100',
+                    '--exclude=*.Trashes',
+                    '--stats', '--progress',
+                    source, destination
                 ]
             generate_log(
                 log_name_source, 'EVENT = File Transfer, status=started, agentName=OSX, agentName=rsync'
@@ -373,7 +392,7 @@ def check_for_sip(args):
     This checks if the input folder contains the actual payload, eg:
     the UUID folder(containing logs/metadata/objects) and the manifest sidecar.
     '''
-    remove_bad_files(args, None)
+
     for filenames in os.listdir(args):
         # make sure that it's an IFI SIP.
         if 'manifest.md5' in filenames:
@@ -698,10 +717,14 @@ def main(args_):
     overwrite_destination_manifest, overwrite_destination_dir = overwrite_check(
         destination, log_name_source,
         destination_final_path, manifest_destination
+    )    
+    
+    # Skipping removal of bad files at source directory to preserve original media
+    generate_log(
+        log_name_source,
+        'EVENT = Ignore unwanted files at source directory to preserve original media'
     )
-    remove_bad_files(
-        source, log_name_source
-    )
+    
     source_count, file_list = toolkit.ififuncs.count_stuff(
         source
     )
