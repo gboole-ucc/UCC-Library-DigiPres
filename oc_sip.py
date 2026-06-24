@@ -82,17 +82,46 @@ def run_clamscan(target_dir, metadata_dir, log_file, label="source"):
 
 
 # --------------------------------------------------
-# RUN COPYIT (VERIFIED COPY)
+# RUN COPYIT (VERIFIED COPY WITH RESULT LOGGING)
 # --------------------------------------------------
 def run_copyit(source, objects_dir, log_file):
     """
     Uses copyit.py to copy and verify files into objects directory
+    and logs transfer outcome
     """
 
     command = ["python3", "copyit.py", source, objects_dir]
 
     generate_log(log_file, f"Starting verified transfer with copyit: {source}")
-    subprocess.run(command)
+
+    # Capture stdout/stderr from copyit
+    result = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    output = result.stdout
+
+    # --------------------------------------------------
+    # CHECK RESULT
+    # --------------------------------------------------
+    if "eventOutcome=pass" in output or "checksums match" in output:
+        generate_log(
+            log_file,
+            "File Transfer Judgement - Success, eventOutcome=pass"
+        )
+    else:
+        generate_log(
+            log_file,
+            "File Transfer Judgement - Failure"
+        )
+        generate_log(
+            log_file,
+            "Copyit output:\n" + output
+        )
+
     generate_log(log_file, "copyit transfer and verification complete")
 
 
