@@ -25,6 +25,63 @@ def validate_uid(uid):
 
 
 # --------------------------------------------------
+# RUN CLAMSCAN (SOURCE WITH VALIDATION + PROMPT)
+# --------------------------------------------------
+def run_clamscan(target_dir, metadata_dir, log_file, label="source"):
+
+    output_file = os.path.join(metadata_dir, f"clamscan_{label}.log")
+    command = f'clamscan -r "{target_dir}"'
+
+    print("running clamscan virus check on source directory")
+    generate_log(log_file, f"Starting ClamAV scan on {label}: {target_dir}")
+
+    with open(output_file, "w") as f:
+        subprocess.run(command, shell=True, stdout=f, stderr=subprocess.STDOUT)
+
+    infected = 0
+    errors = 0
+
+    try:
+        with open(output_file, "r") as f:
+            for line in f:
+                if "Infected files:" in line:
+                    infected = int(line.split(":")[1].strip())
+                elif "Errors:" in line:
+                    errors = int(line.split(":")[1].strip())
+    except Exception:
+        pass
+
+    if infected == 0 and errors == 0:
+        print("clamscan on source complete: no infected files, no errors")
+        generate_log(log_file, "ClamAV scan complete on source: PASS")
+        return True
+
+    else:
+        print(f"clamscan on source complete: {infected} infected files, {errors} errors. please see log for more information ({output_file})")
+        generate_log(log_file, f"ClamAV scan complete on source: {infected} infected files, {errors} errors")
+
+        answer = input(
+            "do you want to continue creating this SIP? transferring infected files may compromise your destination environment. y/n\n"
+        ).lower()
+
+        if answer == "n":
+            print("SIP creation aborted")
+            generate_log(log_file, "SIP creation aborted by user")
+            return False
+
+        answer2 = input(
+            f"are you very sure you want to proceed with {infected} infected files and {errors} errors y/n?\n"
+        ).lower()
+
+        if answer2 == "n":
+            print("SIP creation aborted")
+            generate_log(log_file, "SIP creation aborted by user")
+            return False
+
+        return True
+
+
+# --------------------------------------------------
 # RUN COPYIT (VERIFIED COPY)
 # --------------------------------------------------
 def run_copyit(source, objects_dir, log_file):
@@ -32,17 +89,10 @@ def run_copyit(source, objects_dir, log_file):
     Uses copyit.py to copy and verify files into objects directory
     """
 
-    command = [
-        "python3",
-        "copyit.py",
-        source,
-        objects_dir
-    ]
+    command = ["python3", "copyit.py", source, objects_dir]
 
     generate_log(log_file, f"Starting verified transfer with copyit: {source}")
-
     subprocess.run(command)
-
     generate_log(log_file, "copyit transfer and verification complete")
 
 
@@ -76,7 +126,6 @@ def copy_supplements(sup_paths, supplement_dir, log_file):
 def move_manifest_logs(sip_dir, metadata_dir):
 
     for file in os.listdir(sip_dir):
-
         if file.startswith("manifest_creation") and file.endswith(".log"):
             shutil.move(
                 os.path.join(sip_dir, file),
@@ -92,10 +141,7 @@ def copy_log_to_metadata(log_file, metadata_dir):
     if not os.path.exists(log_file):
         return
 
-    shutil.copy2(
-        log_file,
-        os.path.join(metadata_dir, os.path.basename(log_file))
-    )
+    shutil.copy2(log_file, os.path.join(metadata_dir, os.path.basename(log_file)))
 
 
 # --------------------------------------------------
@@ -105,9 +151,7 @@ def detect_formats(objects_dir):
 
     files = utils.collect_files(objects_dir)
 
-    image_exts = []
-    av_exts = []
-    other_exts = []
+    image_exts, av_exts, other_exts = [], [], []
 
     for f in files:
         ext = os.path.splitext(f)[1].lower()
@@ -131,11 +175,9 @@ def detect_formats(objects_dir):
 # --------------------------------------------------
 def run_metadata_extractors(objects_dir, sip_dir, log_file):
 
-    class Args:
-        pass
+    class Args: pass
 
     metadata_root = os.path.join(sip_dir, "metadata")
-
     img_formats, av_formats, other_formats = detect_formats(objects_dir)
 
     if img_formats or other_formats:
@@ -169,12 +211,11 @@ def run_metadata_extractors(objects_dir, sip_dir, log_file):
 
 
 # --------------------------------------------------
-# MERGE METADATA CSVs
+# MERGE METADATA CSVs (UNCHANGED)
 # --------------------------------------------------
 def merge_exif_outputs(metadata_dir, log_file):
 
     all_csv_files = utils.collect_files(metadata_dir, extensions=[".csv"])
-
     valid_csvs = []
 
     for csv_file in all_csv_files:
@@ -220,24 +261,16 @@ def run_brunnhilde(objects_dir, metadata_dir, uid, log_file):
     if os.path.exists(output):
         shutil.rmtree(output)
 
-    subprocess.run(["brunnhilde.py", objects_dir, output])
+    generate_log(log_file, "Running Brunnhilde without virus scan")
+
+    subprocess.run([
+        "brunnhilde.py",
+        "--noclam",
+        objects_dir,
+        output
+    ])
 
     generate_log(log_file, "Brunnhilde complete")
-
-
-# --------------------------------------------------
-# RUN CLAMSCAN
-# --------------------------------------------------
-def run_clamscan(objects_dir, metadata_dir, log_file):
-
-    output_file = os.path.join(metadata_dir, "clamscan.txt")
-
-    command = f'clamscan -r "{objects_dir}"'
-
-    with open(output_file, "w") as f:
-        subprocess.run(command, shell=True, stdout=f, stderr=subprocess.STDOUT)
-
-    generate_log(log_file, "ClamAV scan complete")
 
 
 # --------------------------------------------------
@@ -245,9 +278,11 @@ def run_clamscan(objects_dir, metadata_dir, log_file):
 # --------------------------------------------------
 def run_jhove(objects_dir, metadata_dir, uid, log_file):
 
-    jhove_bin = shutil.which("jhove")
+    jhove_bin = shutil.which("jhove") or os.path.expanduser("~/jhove/jhove")
 
-    if not jhove_bin:
+    if not jhove_bin or not os.path.isfile(jhove_bin):
+        generate_log(log_file, "JHOVE not found - skipping")
+        print("JHOVE not found - skipping")
         return
 
     subprocess.run([
@@ -321,6 +356,10 @@ def main():
     os.makedirs(supplement_dir, exist_ok=True)
     os.makedirs(objects_dir, exist_ok=True)
 
+    # CLAMSCAN FIRST
+    if not run_clamscan(args.i, metadata_dir, log_file, "source"):
+        return
+
     # VERIFIED COPY
     run_copyit(args.i, objects_dir, log_file)
 
@@ -340,7 +379,6 @@ def main():
 
     # TOOLS
     run_brunnhilde(objects_dir, metadata_dir, args.uid, log_file)
-    run_clamscan(objects_dir, metadata_dir, log_file)
     run_jhove(objects_dir, metadata_dir, args.uid, log_file)
 
     # SIP MANIFEST
