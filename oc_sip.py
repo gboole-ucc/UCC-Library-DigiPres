@@ -8,11 +8,6 @@ import subprocess
 import time
 
 from manifest import create_manifest_for_directory
-from metadata_extractor import (
-    image_exiftool,
-    av_mediainfo,
-    others_exiftool
-)
 from logger import make_desktop_logs_dir, generate_log
 import toolkit.utils as utils
 
@@ -148,6 +143,39 @@ def copy_supplements(sup_paths, supplement_dir, log_file):
             shutil.copytree(sup_path, dest, dirs_exist_ok=True)
             generate_log(log_file, f"Supplement directory copied: {sup_path}")
 
+# --------------------------------------------------
+# MOVE COPYIT MANIFEST OUT OF SIP
+# --------------------------------------------------
+def move_copyit_manifest(objects_dir, log_file):
+    """
+    Move the destination manifest created by copyit.py
+    from the objects directory to the Desktop moveit_manifests folder.
+    """
+
+    desktop = os.path.expanduser("~/Desktop")
+    manifest_dir = os.path.join(desktop, "moveit_manifests")
+
+    # Ensure destination folder exists
+    os.makedirs(manifest_dir, exist_ok=True)
+
+    for root, dirs, files in os.walk(objects_dir):
+        for file in files:
+            if file.endswith(".md5"):
+
+                source_path = os.path.join(root, file)
+                dest_path = os.path.join(manifest_dir, file)
+
+                try:
+                    shutil.move(source_path, dest_path)
+                    generate_log(
+                        log_file,
+                        f"Moved copyit manifest: {source_path} → {dest_path}"
+                    )
+                except Exception as e:
+                    generate_log(
+                        log_file,
+                        f"Error moving manifest {source_path}: {e}"
+                    )
 
 # --------------------------------------------------
 # MOVE MANIFEST LOGS INTO METADATA
@@ -199,48 +227,9 @@ def detect_formats(objects_dir):
     )
 
 
-# --------------------------------------------------
-# RUN METADATA EXTRACTORS
-# --------------------------------------------------
-def run_metadata_extractors(objects_dir, sip_dir, log_file):
-
-    class Args: pass
-
-    metadata_root = os.path.join(sip_dir, "metadata")
-    img_formats, av_formats, other_formats = detect_formats(objects_dir)
-
-    if img_formats or other_formats:
-
-        exif_root = os.path.join(metadata_root, "exif")
-        os.makedirs(exif_root, exist_ok=True)
-
-        args = Args()
-        args.i = objects_dir
-        args.dest = exif_root
-
-        if img_formats:
-            args.img = " ".join(img_formats)
-            image_exiftool(args, log_file)
-
-        if other_formats:
-            args.text = " ".join(other_formats)
-            others_exiftool(args, log_file)
-
-    if av_formats:
-
-        mediainfo_root = os.path.join(metadata_root, "mediainfo")
-        os.makedirs(mediainfo_root, exist_ok=True)
-
-        args = Args()
-        args.i = objects_dir
-        args.dest = mediainfo_root
-        args.av = " ".join(av_formats)
-
-        av_mediainfo(args, log_file)
-
 
 # --------------------------------------------------
-# MERGE METADATA CSVs (UNCHANGED)
+# MERGE METADATA CSVs
 # --------------------------------------------------
 def merge_exif_outputs(metadata_dir, log_file):
 
@@ -391,6 +380,8 @@ def main():
 
     # VERIFIED COPY
     run_copyit(args.i, objects_dir, log_file)
+    # move copyit manifest out of sip to Desktop/moveit_manifests
+    move_copyit_manifest(objects_dir, log_file)
 
     # SUPPLEMENTS
     copy_supplements(args.sup, supplement_dir, log_file)
@@ -402,10 +393,7 @@ def main():
     )
     move_manifest_logs(sip_dir, metadata_dir)
 
-    # METADATA
-    run_metadata_extractors(objects_dir, sip_dir, log_file)
-    merge_exif_outputs(metadata_dir, log_file)
-
+    
     # TOOLS
     run_brunnhilde(objects_dir, metadata_dir, args.uid, log_file)
     run_jhove(objects_dir, metadata_dir, args.uid, log_file)
