@@ -34,6 +34,83 @@ def normalise_path(path: str, base_dir: str) -> str:
     rel_path = os.path.relpath(path, base_dir)
     return os.path.normpath(rel_path)
 
+def resolve_input_files(
+    input_dir: str | None,
+    input_files: list[str] | None,
+    extensions: list[str] | None = None,
+) -> list[str]:
+    """
+    Resolve a definitive list of files to process.
+
+    Supports:
+    - Directory input (-i)
+    - Explicit file list (--files)
+
+    Parameters
+    ----------
+    input_dir : str | None
+        Directory path to scan
+    input_files : list[str] | None
+        Explicit file paths
+    extensions : list[str] | None
+        Allowed file extensions
+
+    Returns
+    -------
+    list[str]
+        List of valid file paths
+    """
+
+    resolved_files: list[str] = []
+
+    # --------------------------------------------------
+    # Case 1: explicit files passed (--files)
+    # --------------------------------------------------
+    if input_files:
+        for file_path in input_files:
+
+            # Ensure file exists
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(f"File not found: {file_path}")
+
+            # Filter by extension if provided
+            if extensions:
+                if not file_path.lower().endswith(tuple(extensions)):
+                    continue
+
+            resolved_files.append(os.path.abspath(file_path))
+
+        if not resolved_files:
+            raise ValueError("No valid input files matched the specified format")
+
+        return resolved_files
+
+    # --------------------------------------------------
+    # Case 2: directory input (-i)
+    # --------------------------------------------------
+    if input_dir:
+        if not os.path.isdir(input_dir):
+            raise NotADirectoryError(f"Invalid directory: {input_dir}")
+
+        resolved_files = collect_files(
+            root_dir=input_dir,
+            extensions=extensions,
+            ignore_hidden=True
+        )
+
+        if not resolved_files:
+            raise ValueError("No matching files found in directory")
+
+        return resolved_files
+
+    # --------------------------------------------------
+    # No valid input
+    # --------------------------------------------------
+    raise ValueError("Either input_dir or input_files must be provided")
+
+
+
+
 # ----------------I/O functions----------------
 
 def read_json(file_path: str) -> dict | None:
@@ -201,6 +278,49 @@ def infer_logical_format(
     ext = os.path.splitext(source_file)[1]
 
     return extension_map.get(ext, 'unknown')
+
+# ----------------OS/system artefact detection----------------
+def is_system_artefact(filename: str) -> bool:
+    """
+    Identify system artefacts (macOS + Windows), case-insensitively.
+    """
+
+    name = filename.lower()
+
+    return (
+        name.startswith("._") or          # Mac resource forks
+        name == ".ds_store" or            # Mac Finder metadata
+        name in ("desktop db", "desktop df") or  # classic Mac
+        name == "thumbs.db" or            # Windows thumbnails
+        name == "autorun.inf"             # Windows autorun 
+    )
+
+#----------------OS/system directory filtering----------------
+
+def filter_system_directories(dirs: list[str]) -> list[str]:
+    """
+    Remove OS/system directories from traversal.
+
+    Parameters
+    ----------
+    dirs : list[str]
+        Directory names from os.walk()
+
+    Returns
+    -------
+    list[str]
+        Filtered list of directories
+    """
+
+    excluded_dirs = {
+        ".Spotlight-V100",
+        ".Trashes",
+        ".fseventsd"
+    }
+
+    return [d for d in dirs if d not in excluded_dirs]
+
+
 
 
 # ----------------Metadata CSV merge functions----------------
