@@ -10,6 +10,7 @@ from logger import generate_log, make_desktop_logs_dir, remove_bad_files
 from metadata_extractor import format_details, image_exiftool, av_mediainfo, others_exiftool
 from manifest import create_manifest_for_directory
 from validate import validate_objects_against_manifest
+from toolkit.utils import resolve_input_files
 
 
 # ----------------------------------------------------------------------
@@ -55,17 +56,32 @@ def arg_parse():
             supplementary files could be stored as well. Written by, Abhijeet Rao, UCC 2023-2024"
     )
 
-    parser.add_argument('-i', 
-                        required=True,
-                        type=str, 
-                        help="Full path of input directory")
-    
+    # --------------------------------------------------
+    # Input source (EITHER directory OR files)
+    # --------------------------------------------------
+    input_group = parser.add_mutually_exclusive_group(required=True)
+
+    input_group.add_argument(
+        '-i',
+        type=str,
+        help="Full path of input directory"
+    )
+
+    input_group.add_argument(
+        '--files',
+        nargs='+',
+        type=str,
+        help="One or more individual files instead of a directory"
+    )
+
     parser.add_argument('-format',
                         required=True, 
                         type=str,
                         default="", 
                         help="Enter the format you would like to package")
     
+
+
     parser.add_argument('-uid', 
                         type=str,
                         default="", 
@@ -125,87 +141,64 @@ def arg_parse():
 # folder.
 def objects_and_supplements_ip(args, log_name_source):
     
-    input_path = args.i
     file_formats = args.format_list
+    if isinstance(file_formats, str):
+        file_formats = []
     supplement_formats = args.supplement
 
     # Normalise supplement formats to a list for consistent matching
     if isinstance(supplement_formats, str):
         supplement_formats = supplement_formats.strip().split()
+
+    # Normalise to lowercase
+    supplement_formats = [ext.lower() for ext in supplement_formats]
         
-    output_path = os.path.join(args.o, args.uid)
     objects_folder = args.objects_folder
     supplement_folder = args.supplement_folder
 
-    for root, dirs, files in os.walk(input_path):
-        # Skip macOS system directories completely
-        dirs[:] = [
-            d for d in dirs
-            if d not in [".Spotlight-V100", ".Trashes", ".fseventsd"]
-        ]
+    for file_src in args.input_files:
 
-        if files == () or files == []:
+        if not os.path.exists(file_src):
+            msg = f"Source file not found (skipping): {file_src}"
+            print(msg)
+            generate_log(log_name_source, msg)
             continue
 
-        for file in files:
-            # Skip macOS artefacts and resource forks
-            if file.startswith("._") or file == ".DS_Store":
-                generate_log(
-                    log_name_source,
-                    f"Skipping macOS artefact: {os.path.join(root, file)}"
-                )
-                continue
-            file_format = (os.path.splitext(file)[1]).lower()
-            if file_format in file_formats:
-                file_src = os.path.join(root, file)
+        file = os.path.basename(file_src)
+        root = os.path.dirname(file_src)
 
-                # DEBUG: log exactly what is about to be copied
-                generate_log(log_name_source, f"Attempting to copy: {file_src}")
+        # Skip macOS artefacts and resource forks
+        if file.startswith("._") or file == ".DS_Store":
+            generate_log(
+                log_name_source,
+                f"Skipping macOS artefact: {file_src}"
+            )
+            continue
 
-                # Guard against missing or unstable files (e.g. network shares)
-                if not os.path.exists(file_src):
-                    msg = f"Source file not found (skipping): {file_src}"
-                    print(msg)
-                    generate_log(log_name_source, msg)
-                    continue
-                  
-                if not args.kfs:
-                    
-                    # flatten folder structure   
+        file_format = os.path.splitext(file)[1].lower()
 
-                    if not os.path.exists(file_src):
-                        msg = f"Source file not found (skipping): {file_src}"
-                        print(msg)
-                        generate_log(log_name_source, msg)
-                        continue
+        # ---------------- Objects ----------------
+        if file_format in file_formats:
 
-                    try:
-                        shutil.copy2(file_src, objects_folder)
-                    except FileNotFoundError as e:
-                        msg = f"File not found during copy (skipping): {file_src}"
-                        print(msg)
-                        generate_log(log_name_source, msg)
-                        continue
+            generate_log(log_name_source, f"Attempting to copy: {file_src}")
 
-                else:
-                    relative_path = os.path.relpath(root, os.path.dirname(input_path))
-                    dest_dir = os.path.join(objects_folder, relative_path)
-                    
-                    # Ensure the destination directory exists
-                    os.makedirs(dest_dir, exist_ok=True)
-                    
-                    # Copy the file to the new destination preserving the directory structure
-                    new_file_name = file
-                    file_dest = os.path.join(dest_dir, new_file_name)
-                    shutil.copy2(file_src, file_dest)
-                
-                print(f"{file} copied to destination correctly")
-                generate_log(log_name_source, f"{file} copied to destination correctly")
-            
-            elif supplement_formats!=[] and file_format in supplement_formats:
-                file_src = os.path.join(root, file)
+            if not args.kfs:
+                dest_name = f"{os.path.basename(root)}_{file}"
+                dest_path = os.path.join(objects_folder, dest_name)
+                shutil.copy2(file_src, dest_path)
+            else:
+                base_dir = args.i if args.i else os.path.dirname(file_src)
+                relative_path = os.path.relpath(root, base_dir)
+                dest_dir = os.path.join(objects_folder, relative_path)
+                os.makedirs(dest_dir, exist_ok=True)
+                shutil.copy2(file_src, os.path.join(dest_dir, file))
 
-                shutil.copy2(file_src, supplement_folder)
+            print(f"{file} copied to destination correctly")
+            generate_log(log_name_source, f"{file} copied to destination correctly")
+
+        # ---------------- Supplement ----------------
+        elif supplement_formats and file_format in supplement_formats:
+            shutil.copy2(file_src, supplement_folder)
 
             
     print(f"Finished processing object and supplementary files for {args.format} files")
@@ -409,17 +402,31 @@ def main():
     jhove_ran = False
     jhove_skipped_unsupported = False
 
-    input_path = args.i
-    log_name_source_ = "ip_creator_"  + str(os.path.basename(input_path)) + time.strftime("_%Y_%m_%dT%H_%M_%S") + ".log"
+    input_path = args.i if args.i else "selected_files"
+
+    log_name_source_ = (
+        "ip_creator_" +
+        str(os.path.basename(input_path)) +
+        time.strftime("_%Y_%m_%dT%H_%M_%S") +
+        ".log"
+        )
+    
     desktop_logs_dir = make_desktop_logs_dir()
     log_name_source = os.path.join(desktop_logs_dir, log_name_source_)
     
-    if not os.path.isdir(input_path):
-        print(' - Input must be a directory/folder - exiting!')
-        generate_log(log_name_source, ' - Input must be a directory/folder - exiting!')
-        sys.exit()
+    if args.files:
+        for f in args.files:
+            if not os.path.isfile(f):
+                print(f"Input file does not exist: {f}")
+                sys.exit()
+    else:
+        if not os.path.isdir(input_path):
+            print(' - Input must be a directory/folder - exiting!')
+            generate_log(log_name_source, ' - Input must be a directory/folder - exiting!')
+            sys.exit()
 
-    remove_bad_files(input_path, log_name_source)
+    if args.i:
+        remove_bad_files(input_path, log_name_source)
     
     if args.uid == "":
         uid = input('Please enter the uid name to be created (Do not enter an empty string): ')
@@ -455,6 +462,7 @@ def main():
         supplement = args.supplement
         generate_log(log_name_source, f"Supplementary formats to be preserved - {supplement}")
 
+    args.supplement = supplement
     args_object = Arguments()
 
     format = args.format
@@ -473,6 +481,26 @@ def main():
     else:
         generate_log(log_name_source, "Enter a proper av/image/text format to package")
         print("Enter a proper image/av/text format to package")
+        sys.exit()
+
+    # --------------------------------------------------
+    # Resolve input files (correct version)
+    # --------------------------------------------------
+    try:
+        args.input_files = resolve_input_files(
+            input_dir=None if args.files else args.i,
+            input_files=args.files,
+            extensions=args.format_list
+        )
+
+        generate_log(
+            log_name_source,
+            f"{len(args.input_files)} files selected for processing"
+        )
+
+    except Exception as e:
+        print(str(e))
+        generate_log(log_name_source, str(e))
         sys.exit()
 
     args_object.i = input_path
