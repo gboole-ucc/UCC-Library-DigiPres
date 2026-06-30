@@ -467,20 +467,38 @@ def brunnhilde_scan(args, log_name_source):
         brunnhilde_output_folder
     ]
 
+    # Check if --no-clamav is supported before using it
+    help_check = subprocess.run(["brunnhilde.py", "-h"], capture_output=True, text=True)
+
     if args.noclam:
-        command.append("--no-clamav")
+        if "--no-clamav" in help_check.stdout:
+            command.append("--no-clamav")
+        else:
+            print(" - Brunnhilde version does not support --no-clamav, skipping flag")
 
     print("Running Brunnhilde command: " + " ".join(command))
     subprocess.run(command, text=True)
 
-    os.rename(os.path.join(brunnhilde_output_folder, "report.html"), \
-              os.path.join(brunnhilde_output_folder, base_folder+"_report.html"))
-    
-    os.rename(os.path.join(brunnhilde_output_folder, "siegfried.csv"), \
-              os.path.join(brunnhilde_output_folder, base_folder+"_siegfried.csv"))
-    
-    os.rename(os.path.join(os.path.join(brunnhilde_output_folder, "logs"), "viruscheck-log.txt"), \
-              os.path.join(os.path.join(brunnhilde_output_folder, "logs"), base_folder+"_viruscheck-log.txt"))
+    def safe_rename(src, dst):
+        if os.path.exists(src):
+            os.rename(src, dst)
+        else:
+            print(f" - Expected file not found, skipping rename: {src}")
+
+    safe_rename(
+    os.path.join(brunnhilde_output_folder, "report.html"),
+    os.path.join(brunnhilde_output_folder, base_folder+"_report.html")
+    )
+
+    safe_rename(
+        os.path.join(brunnhilde_output_folder, "siegfried.csv"),
+        os.path.join(brunnhilde_output_folder, base_folder+"_siegfried.csv")
+    )
+
+    safe_rename(
+        os.path.join(brunnhilde_output_folder, "logs", "viruscheck-log.txt"),
+        os.path.join(brunnhilde_output_folder, "logs", base_folder+"_viruscheck-log.txt")
+    )
     
     print(' - brunnhilde-ClamAV available/enabled - scanning process completed')
     generate_log(log_name_source, ' - brunnhilde-ClamAV available/enabled - scanning process completed')
