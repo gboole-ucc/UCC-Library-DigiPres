@@ -8,7 +8,11 @@ import subprocess
 import time
 
 from manifest import create_manifest_for_directory
-from logger import make_desktop_logs_dir, generate_log
+from logger import (
+    make_desktop_logs_dir,
+    generate_log,
+    premis_event
+)
 import toolkit.utils as utils
 
 
@@ -87,14 +91,22 @@ def run_copyit(source, objects_dir, log_file):
 
     command = ["python3", "copyit.py", source, objects_dir]
 
-    generate_log(log_file, f"Starting verified transfer with copyit: {source}")
+    premis_event(
+        log_file,
+        "replication",
+        "started",
+        f"Verified transfer initiated from {source}",
+        "copyit.py",
+        os.path.basename(source)
+   )
 
     # Capture stdout/stderr from copyit
     result = subprocess.run(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True
+        text=True,
+        errors="replace"
     )
 
     output = result.stdout
@@ -102,16 +114,27 @@ def run_copyit(source, objects_dir, log_file):
     # --------------------------------------------------
     # CHECK RESULT
     # --------------------------------------------------
+
     if "eventOutcome=pass" in output or "checksums match" in output:
-        generate_log(
+
+        premis_event(
             log_file,
-            "File Transfer Judgement - Success, eventOutcome=pass"
+            "replication",
+            "pass",
+            "Verified copy completed. Source and destination manifests match.",
+            "copyit.py"
         )
+
     else:
-        generate_log(
+
+        premis_event(
             log_file,
-            "File Transfer Judgement - Failure"
+            "replication",
+            "fail",
+            "Checksum verification failed following copy operation.",
+            "copyit.py"
         )
+
         generate_log(
             log_file,
             "Copyit output:\n" + output
@@ -345,6 +368,12 @@ def main():
         help="Enter one or more additional directories/files to be copied from a different source to the destination"
     )
 
+    parser.add_argument(
+        '--noclam',
+        action='store_true',
+        help='Disable ClamAV scan (enabled by default)'
+  )
+
     args = parser.parse_args()
 
     if not validate_uid(args.uid):
@@ -358,7 +387,14 @@ def main():
         f"oc_sip_{args.uid}_{time.strftime('%Y%m%d_%H%M%S')}.log"
     )
 
-    generate_log(log_file, "SIP creation started")
+    premis_event(
+        log_file,
+        "ingestion",
+        "started",
+        f"SIP creation started for {args.uid}",
+        "oc_sip.py",
+        args.uid
+)
 
     sip_dir = os.path.join(args.o, f"{args.uid}_sip")
 
@@ -374,9 +410,14 @@ def main():
     os.makedirs(supplement_dir, exist_ok=True)
     os.makedirs(objects_dir, exist_ok=True)
 
-    # CLAMSCAN FIRST
-    if not run_clamscan(args.i, metadata_dir, log_file, "source"):
-        return
+    # CLAMSCAN FIRST (optional)
+    if not args.noclam:
+        if not run_clamscan(args.i, metadata_dir, log_file, "source"):
+            return
+    else:
+        message = "ClamAV scan skipped (--noclam enabled)"
+        print(message)
+        generate_log(log_file, message)
 
     # VERIFIED COPY
     run_copyit(args.i, objects_dir, log_file)
@@ -405,7 +446,14 @@ def main():
     )
     move_manifest_logs(sip_dir, metadata_dir)
 
-    generate_log(log_file, "SIP creation completed successfully")
+    premis_event(
+        log_file,
+        "ingestion",
+        "pass",
+        "SIP creation completed successfully",
+        "oc_sip.py",
+        args.uid
+    )
 
     # COPY LOG INTO SIP
     copy_log_to_metadata(log_file, metadata_dir)

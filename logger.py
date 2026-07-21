@@ -23,6 +23,37 @@ def generate_log(log, what2log):
                      + getpass.getuser()
                      + ' ' + what2log + ' \n')
 
+#PREMIS Event logger
+
+def premis_event(
+        log_file,
+        event_type,
+        event_outcome,
+        event_detail,
+        agent,
+        object_identifier=None
+):
+    """
+    Write a PREMIS-style event to a UTF-8 log.
+    """
+
+    entry = (
+        f"eventType={event_type} | "
+        f"eventOutcome={event_outcome} | "
+        f"eventDetail={event_detail} | "
+        f"linkingAgentIdentifier={agent}"
+    )
+
+    if object_identifier:
+        entry += (
+            f" | linkingObjectIdentifier={object_identifier}"
+        )
+
+    generate_log(log_file, entry)
+
+
+
+
 def remove_bad_files(root_dir, log_name_source):
     '''
     Removes unwanted files.
