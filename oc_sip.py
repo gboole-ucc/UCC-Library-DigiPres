@@ -31,7 +31,11 @@ def run_clamscan(target_dir, metadata_dir, log_file, label="source"):
     output_file = os.path.join(metadata_dir, f"clamscan_{label}.log")
     command = f'clamscan -r "{target_dir}"'
 
-    print("running clamscan virus check on source directory")
+    print("\n--------------------------------------------------")
+    print("STEP 1/7 - CLAMAV VIRUS SCAN")
+    print("--------------------------------------------------")
+    print(f"Scanning source directory:\n{target_dir}")
+    print("Please wait...\n")
     generate_log(log_file, f"Starting ClamAV scan on {label}: {target_dir}")
 
     with open(output_file, "w") as f:
@@ -51,7 +55,9 @@ def run_clamscan(target_dir, metadata_dir, log_file, label="source"):
         pass
 
     if infected == 0 and errors == 0:
-        print("clamscan on source complete: no infected files, no errors")
+        print("✓ ClamAV scan completed successfully")
+        print("✓ Infected files: 0")
+        print("✓ Errors: 0\n")
         generate_log(log_file, "ClamAV scan complete on source: PASS")
         return True
 
@@ -91,6 +97,14 @@ def run_copyit(source, objects_dir, log_file):
 
     command = ["python3", "copyit.py", source, objects_dir]
 
+    print("\n--------------------------------------------------")
+    print("STEP 2/7 - VERIFIED FILE TRANSFER")
+    print("--------------------------------------------------")
+    print(f"Source: {source}")
+    print(f"Destination: {objects_dir}")
+    print("Launching copyit.py...")
+    print("Please wait.\n")
+
     premis_event(
         log_file,
         "replication",
@@ -101,15 +115,27 @@ def run_copyit(source, objects_dir, log_file):
    )
 
     # Capture stdout/stderr from copyit
-    result = subprocess.run(
+    process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        errors="replace"
     )
 
-    output = result.stdout
+    output = ""
+
+    if process.stdout:
+        for line in process.stdout:
+            print(line.rstrip())
+            output += line
+
+    process.wait()
+
+    if process.returncode != 0:
+        print(
+            f"Warning: copyit.py exited with return code "
+            f"{process.returncode}"
+        )
 
     # --------------------------------------------------
     # CHECK RESULT
@@ -124,6 +150,9 @@ def run_copyit(source, objects_dir, log_file):
             "Verified copy completed. Source and destination manifests match.",
             "copyit.py"
         )
+        print("✓ Verified copy completed successfully")
+        print("✓ Source and destination manifests match")
+        print("✓ Fixity verification passed\n")
 
     else:
 
@@ -134,6 +163,9 @@ def run_copyit(source, objects_dir, log_file):
             "Checksum verification failed following copy operation.",
             "copyit.py"
         )
+        print("✖ Copy verification failed")
+        print("✖ Source and destination manifests do not match")
+        print("✖ Fixity verification failed\n")
 
         generate_log(
             log_file,
@@ -149,21 +181,33 @@ def run_copyit(source, objects_dir, log_file):
 def copy_supplements(sup_paths, supplement_dir, log_file):
 
     if not sup_paths:
+        print("\nSTEP 3/7 - SUPPLEMENTS")
+        print("No supplements supplied.\n")
         return
+    print("\n--------------------------------------------------")
+    print("STEP 3/7 - COPYING SUPPLEMENTS")
+    print("--------------------------------------------------")
 
     for sup_path in sup_paths:
 
         if not os.path.exists(sup_path):
+            print(f"⚠ Supplement not found: {sup_path}")
             generate_log(log_file, f"Supplement not found: {sup_path}")
             continue
 
         if os.path.isfile(sup_path):
+            print(f"Copying supplement file:")
+            print(f"  {sup_path}")    
             shutil.copy2(sup_path, supplement_dir)
+            print("✓ Supplement copied\n")
             generate_log(log_file, f"Supplement file copied: {sup_path}")
 
         elif os.path.isdir(sup_path):
+            print(f"Copying supplement directory:")
+            print(f"  {sup_path}")
             dest = os.path.join(supplement_dir, os.path.basename(sup_path))
             shutil.copytree(sup_path, dest, dirs_exist_ok=True)
+            print("✓ Supplement directory copied\n")   
             generate_log(log_file, f"Supplement directory copied: {sup_path}")
 
 # --------------------------------------------------
@@ -189,12 +233,27 @@ def move_copyit_manifest(objects_dir, log_file):
                 dest_path = os.path.join(manifest_dir, file)
 
                 try:
+
+                    print(
+                        f"Moving manifest:\n"
+                        f"  {file}"
+                    )
+
                     shutil.move(source_path, dest_path)
+
+                    print("✓ Manifest moved to Desktop/moveit_manifests\n")
                     generate_log(
                         log_file,
                         f"Moved copyit manifest: {source_path} → {dest_path}"
                     )
                 except Exception as e:
+
+                    print(
+                        f"⚠ Error moving manifest:\n"
+                        f"  {source_path}\n"
+                        f"  {e}\n"
+                    )
+
                     generate_log(
                         log_file,
                         f"Error moving manifest {source_path}: {e}"
@@ -297,6 +356,12 @@ def merge_exif_outputs(metadata_dir, log_file):
 # --------------------------------------------------
 def run_brunnhilde(objects_dir, metadata_dir, uid, log_file):
 
+    print("\n--------------------------------------------------")
+    print("STEP 5/7 - BRUNNHILDE")
+    print("--------------------------------------------------")
+    print("Running Brunnhilde format identification")
+    print("This may take some time...\n")
+    
     output = os.path.join(metadata_dir, f"{uid}_brunnhilde")
 
     if os.path.exists(output):
@@ -310,7 +375,7 @@ def run_brunnhilde(objects_dir, metadata_dir, uid, log_file):
         objects_dir,
         output
     ])
-
+    print("✓ Brunnhilde analysis complete\n")
     generate_log(log_file, "Brunnhilde complete")
 
 
@@ -319,6 +384,12 @@ def run_brunnhilde(objects_dir, metadata_dir, uid, log_file):
 # --------------------------------------------------
 def run_jhove(objects_dir, metadata_dir, uid, log_file):
 
+    print("\n--------------------------------------------------")
+    print("STEP 6/7 - JHOVE")
+    print("--------------------------------------------------")
+    print("Running JHOVE validation")
+    print("Please wait...\n")
+    
     jhove_bin = shutil.which("jhove") or os.path.expanduser("~/jhove/jhove")
 
     if not jhove_bin or not os.path.isfile(jhove_bin):
@@ -333,6 +404,7 @@ def run_jhove(objects_dir, metadata_dir, uid, log_file):
         objects_dir
     ])
 
+    print("✓ JHOVE validation complete\n")
     generate_log(log_file, "JHOVE complete")
 
 
@@ -428,22 +500,39 @@ def main():
     copy_supplements(args.sup, supplement_dir, log_file)
 
     # OBJECTS MANIFEST
+    print("\n--------------------------------------------------")
+    print("STEP 4/7 - OBJECTS MANIFEST")
+    print("--------------------------------------------------")
+    print("Creating objects_manifest.md5...")
+    
     create_manifest_for_directory(
         objects_dir,
         os.path.join(sip_dir, "objects_manifest.md5")
     )
     move_manifest_logs(sip_dir, metadata_dir)
-
+    print("✓ objects_manifest.md5 created\n")
     
     # TOOLS
     run_brunnhilde(objects_dir, metadata_dir, args.uid, log_file)
     run_jhove(objects_dir, metadata_dir, args.uid, log_file)
 
     # SIP MANIFEST
+    # --------------------------------------------------
+
+    print("\n--------------------------------------------------")
+    print("STEP 7/7 - SIP MANIFEST")
+    print("--------------------------------------------------")
+    print("Creating SIP manifest...")
+    print("Calculating checksums for the entire SIP package.\n")
+
     create_manifest_for_directory(
         sip_dir,
         os.path.join(args.o, f"{args.uid}_sip_manifest.md5")
     )
+
+    print("✓ SIP manifest created")
+    print("✓ SIP-level fixity information recorded\n")
+
     move_manifest_logs(sip_dir, metadata_dir)
 
     premis_event(
@@ -458,7 +547,29 @@ def main():
     # COPY LOG INTO SIP
     copy_log_to_metadata(log_file, metadata_dir)
 
-    print(f"SIP created successfully: {sip_dir}")
+    print("\n==================================================")
+    print("SIP CREATION COMPLETE")
+    print("==================================================")
+
+    print("\nOutput locations:")
+
+    print(
+        f"  SIP:\n"
+        f"    {sip_dir}"
+    )
+
+    print(
+        f"  PREMIS Log:\n"
+        f"    {log_file}"
+    )
+
+    print(
+        f"  Copy manifests:\n"
+        f"    ~/Desktop/moveit_manifests"
+    )
+
+    print("\n✓ SIP creation completed successfully")
+    print("==================================================\n")
 
 
 if __name__ == "__main__":
